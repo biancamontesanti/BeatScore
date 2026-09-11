@@ -22,7 +22,7 @@ import { Direction, TOTAL_MEASURES } from './beatmap'
 // Per-direction style maps
 // ──────────────────────────────────────────────────────────
 const DIR_COLOR: Record<Direction, Color4> = {
-  left: Color4.create(1.00, 0.176, 0.584, 1),
+  left: Color4.create(1.00, 0.400, 0.851, 1),
   down: Color4.create(0.482, 0.380, 1.00, 1),
   up: Color4.create(0.00, 0.831, 1.00, 1),
   right: Color4.create(0.188, 0.890, 0.420, 1),
@@ -1186,26 +1186,28 @@ function OfficialTouchButton({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: Math.floor(size / 2),
-        borderWidth: 2,
-        borderColor: Color4.create(tone.r, tone.g, tone.b, 0.62),
+        borderWidth: 3,
+        borderColor: Color4.create(tone.r, tone.g, tone.b, 0.34),
       }}
-      uiBackground={{ color: Color4.create(0, 0, 0, 0.58) }}
+      uiBackground={{ color: Color4.create(0.02, 0.01, 0.04, 0.90) }}
       uiInputBinding={{ actions: [action] }}
     >
       <UiEntity
         uiTransform={{
-          width: size - 12,
-          height: size - 12,
+          width: size - 8,
+          height: size - 8,
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: Math.floor((size - 12) / 2),
+          borderRadius: Math.floor((size - 8) / 2),
+          borderWidth: 2,
+          borderColor: Color4.create(tone.r, tone.g, tone.b, 0.96),
         }}
-        uiBackground={{ color: Color4.create(tone.r * 0.18, tone.g * 0.18, tone.b * 0.18, 0.78) }}
+        uiBackground={{ color: Color4.create(0.01, 0.01, 0.025, 0.96) }}
       >
         <Label
           value={label}
-          fontSize={size > 78 ? 30 : 24}
-          color={Color4.White()}
+          fontSize={size > 70 ? 44 : 34}
+          color={tone}
           uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
           textAlign="middle-center"
         />
@@ -1218,69 +1220,62 @@ function OfficialMobileControls(): ReactEcs.JSX.Element | null {
   if (!isMobile()) return null
 
   return (
-    <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: 8, left: 0 }, width: '100%', height: 312 }}>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: 14, left: 0 }, width: '100%', height: 252 }}>
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { bottom: 0, left: 16 },
-          width: 318,
-          height: 304,
+          position: { bottom: 0, left: 18 },
+          width: 250,
+          height: 250,
         }}
       >
-        <OfficialTouchButton action={InputAction.IA_ACTION_5} label={DIR_SYMBOL.up} x={108} y={0} size={101} tone={DIR_COLOR.up} />
-        <OfficialTouchButton action={InputAction.IA_ACTION_3} label={DIR_SYMBOL.left} x={0} y={101} size={101} tone={DIR_COLOR.left} />
-        <OfficialTouchButton action={InputAction.IA_ACTION_4} label={DIR_SYMBOL.right} x={216} y={101} size={101} tone={DIR_COLOR.right} />
-        <OfficialTouchButton action={InputAction.IA_ACTION_6} label={DIR_SYMBOL.down} x={108} y={202} size={101} tone={DIR_COLOR.down} />
+        <OfficialTouchButton action={InputAction.IA_ACTION_5} label="⌃" x={84} y={0} size={82} tone={DIR_COLOR.up} />
+        <OfficialTouchButton action={InputAction.IA_ACTION_3} label="‹" x={0} y={84} size={82} tone={DIR_COLOR.left} />
+        <OfficialTouchButton action={InputAction.IA_ACTION_4} label="›" x={168} y={84} size={82} tone={DIR_COLOR.right} />
+        <OfficialTouchButton action={InputAction.IA_ACTION_6} label="⌄" x={84} y={168} size={82} tone={DIR_COLOR.down} />
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { left: 108, top: 101 },
-            width: 101,
-            height: 101,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 50,
+            position: { left: 101, top: 101 },
+            width: 48,
+            height: 48,
+            borderRadius: 24,
           }}
-          uiBackground={{ color: Color4.create(0, 0, 0, 0.38) }}
-        >
-          <UiEntity
-            uiTransform={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 }}
-            uiBackground={{ color: Color4.create(0.90, 0.90, 0.96, 0.24) }}
-          />
-        </UiEntity>
+          uiBackground={{ color: Color4.create(0.01, 0.01, 0.025, 0.78) }}
+        />
       </UiEntity>
 
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
           position: { bottom: 0, right: 16 },
-          width: 206,
-          height: 206,
+          width: 154,
+          height: 154,
         }}
       >
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
             position: { right: 0, bottom: 0 },
-            width: 206,
-            height: 206,
+            width: 154,
+            height: 154,
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 103,
+            borderRadius: 77,
             borderWidth: 3,
-            borderColor: Color4.create(1.0, 0.62, 0.18, 0.72),
+            borderColor: Color4.create(HIT_COLOR.r, HIT_COLOR.g, HIT_COLOR.b, 0.42),
           }}
-          uiBackground={{ color: Color4.create(0, 0, 0, 0.62) }}
+          uiBackground={{ color: Color4.create(0.02, 0.01, 0.015, 0.92) }}
           uiInputBinding={{ actions: [InputAction.IA_JUMP] }}
         >
           <UiEntity
-            uiTransform={{ width: 170, height: 170, alignItems: 'center', justifyContent: 'center', borderRadius: 85 }}
-            uiBackground={{ color: Color4.create(DIR_COLOR.right.r * 0.42, DIR_COLOR.right.g * 0.42, DIR_COLOR.right.b * 0.42, 0.90) }}
+            uiTransform={{ width: 142, height: 142, alignItems: 'center', justifyContent: 'center', borderRadius: 71, borderWidth: 3, borderColor: HIT_COLOR }}
+            uiBackground={{ color: Color4.create(0.07, 0.035, 0.01, 0.96) }}
           >
             <Label
-              value="HIT"
-              fontSize={50}
-              color={Color4.White()}
+              value="★"
+              fontSize={76}
+              color={HIT_COLOR}
               uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
               textAlign="middle-center"
             />
