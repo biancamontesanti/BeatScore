@@ -22,13 +22,15 @@ import { Direction, TOTAL_MEASURES } from './beatmap'
 // Per-direction style maps
 // ──────────────────────────────────────────────────────────
 const DIR_COLOR: Record<Direction, Color4> = {
-  left:  Color4.create(0.30, 0.52, 1.00, 1),
-  down:  Color4.create(0.72, 0.28, 1.00, 1),
-  up:    Color4.create(0.30, 1.00, 0.52, 1),
-  right: Color4.create(1.00, 0.45, 0.05, 1),
-  upLeft: Color4.create(0.86, 0.95, 1.00, 1),
-  upRight: Color4.create(0.20, 1.00, 0.95, 1),
+  left: Color4.create(1.00, 0.176, 0.584, 1),
+  down: Color4.create(0.482, 0.380, 1.00, 1),
+  up: Color4.create(0.00, 0.831, 1.00, 1),
+  right: Color4.create(0.188, 0.890, 0.420, 1),
+  upLeft: Color4.create(0.482, 0.380, 1.00, 1),
+  upRight: Color4.create(0.00, 0.831, 1.00, 1),
 }
+const REVERSE_COLOR = Color4.create(1.00, 0.125, 0.259, 1)
+const HIT_COLOR = Color4.create(1.00, 0.722, 0.00, 1)
 
 const DIR_SYMBOL: Record<Direction, string> = {
   left:  '◄',
@@ -408,7 +410,7 @@ function ArrowBox({
   state: 'done' | 'active' | 'pending' | 'failed'
 }): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const c = inverted ? Color4.create(1.00, 0.12, 0.12, 1) : DIR_COLOR[displayDirection]
+  const c = inverted ? REVERSE_COLOR : DIR_COLOR[displayDirection]
   const sym = state === 'done' && inverted ? DIR_SYMBOL[inputDirection] : DIR_SYMBOL[displayDirection]
 
   let bg: Color4
@@ -416,7 +418,7 @@ function ArrowBox({
 
   switch (state) {
     case 'done':
-      bg = Color4.create(0.80, 0.68, 0.08, 1.00)    // gold
+      bg = HIT_COLOR
       fg = Color4.White()
       break
     case 'active':
@@ -493,7 +495,7 @@ function KeynoteBar(): ReactEcs.JSX.Element {
         <Label
           value={waitingLabel}
           fontSize={30}
-          color={isReverseIntro ? Color4.create(1.0, 0.18, 0.18, 0.98) : Color4.create(1.0, 0.88, 0.2, 0.95)}
+          color={isReverseIntro ? REVERSE_COLOR : HIT_COLOR}
           uiTransform={{ width: '100%', height: 52, alignItems: 'center', justifyContent: 'center' }}
           textAlign="middle-center"
         />
