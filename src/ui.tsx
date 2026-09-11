@@ -547,9 +547,12 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: mobile ? 174 : 204, left: mobile ? '6%' : '10%' },
-        width: mobile ? '88%' : '80%',
-        height: 72,
+        position: mobile
+          ? { top: 174, left: '4%' }
+          : { top: 204, left: 290, right: 245 },
+        width: mobile ? '92%' : undefined,
+        minWidth: mobile ? undefined : 420,
+        height: mobile ? 78 : 82,
         flexDirection: 'column',
         borderRadius: 12,
       }}
@@ -558,32 +561,32 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
       <UiEntity
         uiTransform={{
           width: '100%',
-          height: 18,
+          height: mobile ? 22 : 24,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          margin: { bottom: 4 },
+          margin: { bottom: 5 },
         }}
       >
         <Label
           value="TYPE SEQUENCE →"
-          fontSize={11}
+          fontSize={mobile ? 14 : 15}
           color={Color4.create(0.5, 0.5, 0.5, 0.9)}
-          uiTransform={{ width: 160, height: 18 }}
+          uiTransform={{ width: mobile ? '52%' : 180, height: '100%' }}
           textAlign="middle-left"
         />
         <Label
           value={`← ${hitLabel}`}
-          fontSize={11}
+          fontSize={mobile ? 14 : 15}
           color={spaceColor}
-          uiTransform={{ width: 140, height: 18 }}
+          uiTransform={{ width: mobile ? '46%' : 160, height: '100%' }}
           textAlign="middle-right"
         />
       </UiEntity>
 
       {/* Track */}
       <UiEntity
-        uiTransform={{ width: '100%', height: 34, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
+        uiTransform={{ width: '100%', height: mobile ? 38 : 42, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
         {/* Judgment zone glow */}
@@ -614,10 +617,10 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: 4, left: ballLeftPct },
-            width: 26,
-            height: 26,
-            borderRadius: 13,
+            position: { top: mobile ? 5 : 6, left: ballLeftPct },
+            width: mobile ? 28 : 30,
+            height: mobile ? 28 : 30,
+            borderRadius: 15,
           }}
           uiBackground={{ color: ballColor }}
         />
@@ -680,8 +683,8 @@ function ScorePanel(): ReactEcs.JSX.Element {
       uiTransform={{
         positionType: 'absolute',
         position: mobile ? { top: 72, right: 12 } : { top: 76, right: 24 },
-        width: mobile ? 170 : 205,
-        height: mobile ? 86 : 96,
+        width: mobile ? 190 : 225,
+        height: mobile ? 96 : 108,
         flexDirection: 'column',
         alignItems: 'flex-end',
         padding: { top: mobile ? 9 : 10, right: mobile ? 12 : 14, bottom: 10, left: 10 },
@@ -693,21 +696,21 @@ function ScorePanel(): ReactEcs.JSX.Element {
     >
       <Label
         value="POINTS"
-        fontSize={mobile ? 14 : 16}
+        fontSize={mobile ? 17 : 19}
         color={Color4.create(0.35, 0.9, 1.0, 1)}
         uiTransform={{ width: '100%', height: mobile ? 20 : 22 }}
         textAlign="middle-right"
       />
       <Label
         value={String(gameState.score)}
-        fontSize={mobile ? 25 : 31}
+        fontSize={mobile ? 30 : 35}
         color={Color4.create(1.0, 0.88, 0.18, 1)}
         uiTransform={{ width: '100%', height: mobile ? 34 : 40 }}
         textAlign="middle-right"
       />
       <Label
         value={`MAX PERFECT COMBO  ${gameState.maxCombo}`}
-        fontSize={mobile ? 9 : 12}
+        fontSize={mobile ? 12 : 14}
         color={Color4.create(0.82, 0.82, 0.90, 1)}
         uiTransform={{ width: '100%', height: mobile ? 18 : 20 }}
         textAlign="middle-right"
@@ -1108,13 +1111,13 @@ function DailyGoalsPanel(): ReactEcs.JSX.Element {
 function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEcs.JSX.Element {
   const mobile = isMobile()
   const rankPct = `${(gameState.rankProgress * 100).toFixed(1)}%` as PercentUnit
-  const rowHeight = compact ? 24 : mobile ? 26 : 28
+  const rowHeight = compact ? (mobile ? 29 : 28) : mobile ? 30 : 30
 
   return (
     <UiEntity
       uiTransform={{
         width: compact ? '100%' : mobile ? '90%' : 410,
-        height: compact ? 124 : mobile ? 132 : 150,
+        height: compact ? (mobile ? 150 : 144) : mobile ? 150 : 158,
         flexDirection: 'column',
         padding: compact
           ? { top: 6, right: 6, bottom: 6, left: 6 }
@@ -1124,7 +1127,7 @@ function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEc
     >
       <Label
         value={compact ? 'GOALS' : 'DAILY GOALS'}
-        fontSize={compact ? (mobile ? 15 : 16) : mobile ? 19 : 21}
+        fontSize={compact ? (mobile ? 18 : 18) : mobile ? 21 : 22}
         color={Color4.create(0.52, 0.92, 1, 1)}
         uiTransform={{ width: '100%', height: compact ? 22 : mobile ? 26 : 30 }}
         textAlign="middle-left"
@@ -1140,14 +1143,14 @@ function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEc
         >
           <Label
             value={goal.completed ? `${goal.label} DONE` : goal.label}
-            fontSize={compact ? (mobile ? 12 : 13) : mobile ? 15 : 16}
+            fontSize={compact ? (mobile ? 15 : 15) : mobile ? 17 : 17}
             color={goal.completed ? Color4.create(0.42, 1, 0.58, 1) : Color4.create(0.82, 0.82, 0.9, 1)}
             uiTransform={{ width: compact ? '64%' : mobile ? '66%' : '70%', height: '100%' }}
             textAlign="middle-left"
           />
           <Label
             value={goal.completed ? `+${goal.rewardRp}` : `${goal.progress}/${goal.target}`}
-            fontSize={compact ? (mobile ? 12 : 13) : mobile ? 15 : 16}
+            fontSize={compact ? (mobile ? 15 : 15) : mobile ? 17 : 17}
             color={Color4.create(1, 0.82, 0.22, 1)}
             uiTransform={{ width: compact ? '34%' : mobile ? '32%' : '28%', height: '100%' }}
             textAlign="middle-right"
@@ -1534,11 +1537,11 @@ function SidePlayMenu(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: mobile ? { top: '6%', right: '7%' } : { top: '18%', right: 22 },
-        width: mobile ? '86%' : 210,
-        minWidth: mobile ? 180 : 210,
-        maxWidth: mobile ? 250 : 210,
-        height: mobile ? '88%' : 390,
+        position: mobile ? { top: '4%', right: '5%' } : { top: '14%', right: 22 },
+        width: mobile ? '90%' : 250,
+        minWidth: mobile ? 220 : 250,
+        maxWidth: mobile ? 310 : 250,
+        height: mobile ? '92%' : 430,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
@@ -1551,20 +1554,20 @@ function SidePlayMenu(): ReactEcs.JSX.Element {
     >
       <BeatScoreLogo compact />
       <UiEntity
-        uiTransform={{ width: '100%', height: mobile ? 34 : 42, alignItems: 'center', justifyContent: 'center', margin: { bottom: 6 } }}
+        uiTransform={{ width: '100%', height: mobile ? 44 : 50, alignItems: 'center', justifyContent: 'center', margin: { bottom: 8 } }}
       >
         <Label
           value={`${gameState.danceRank}\n${gameState.rankPoints} RP`}
-          fontSize={mobile ? 15 : 16}
+          fontSize={mobile ? 19 : 20}
           color={Color4.create(1.0, 0.82, 0.22, 1)}
           uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
           textAlign="middle-center"
         />
       </UiEntity>
       <MenuButton label="MULTI" tone="green" onClick={readyForMultiplayer} width={'100%'}
-        height={mobile ? 50 : 56} fontSize={mobile ? 21 : 24} marginBottom={8} />
+        height={mobile ? 58 : 62} fontSize={mobile ? 25 : 27} marginBottom={10} />
       <MenuButton label="SOLO" tone="magenta" onClick={startSoloMode} width={'100%'}
-        height={mobile ? 50 : 56} fontSize={mobile ? 21 : 24} />
+        height={mobile ? 58 : 62} fontSize={mobile ? 25 : 27} />
       <DailyGoalsMenuCard compact />
     </UiEntity>
   )

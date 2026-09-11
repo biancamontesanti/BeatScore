@@ -1377,9 +1377,9 @@ function initCinematicCamera(): void {
   AudioSource.create(arrowClapSoundEntity, {
     audioClipUrl: ARROW_CLAP_SOUND_URL,
     playing: false,
-    volume: 0.75,
+    volume: 1.0,
     loop: false,
-    global: false,
+    global: true,
   })
 
   matchMusicEntity = engine.addEntity()
