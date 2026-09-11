@@ -159,6 +159,25 @@ function textEntity(text: string, x: number, y: number, z: number, fontSize: num
   return entity
 }
 
+function beatScoreLogoEntity(x: number, y: number, z: number, width: number, height: number, rotationY = 180): Entity {
+  const entity = engine.addEntity()
+  const logoTexture = Material.Texture.Common({ src: 'assets/images/beatscore.png' })
+  Transform.create(entity, {
+    position: Vector3.create(x, y, z),
+    rotation: Quaternion.fromEulerDegrees(0, rotationY, 0),
+    scale: Vector3.create(width, height, 1),
+  })
+  MeshRenderer.setPlane(entity)
+  Material.setBasicMaterial(entity, {
+    texture: logoTexture,
+    alphaTexture: logoTexture,
+    alphaTest: 0.08,
+    castShadows: false,
+    diffuseColor: Color4.White(),
+  })
+  return entity
+}
+
 function glassRoundedSign(x: number, y: number, z: number, width: number, height: number, showCorners = true): void {
   const panel = engine.addEntity()
   box(panel, x, y, z, width, height, 0.10)
@@ -355,8 +374,8 @@ function buildPhysicalLeaderboard(): void {
   const textZ = 29.68
   const rotationY = 0
 
-  glassRoundedSign(boardX, 8.42, boardZ - 0.10, 9.2, 1.1, false)
-  textEntity('DROP BEAT', boardX, 8.42, textZ, 9, Color4.create(1.0, 0.24, 0.78, 1), 0.76, rotationY)
+  glassRoundedSign(boardX, 8.72, boardZ - 0.10, 6.7, 2.35, false)
+  beatScoreLogoEntity(boardX, 8.72, textZ, 5.8, 3.17, rotationY)
 
   const board = engine.addEntity()
   remember(board, currentDanceEntities)

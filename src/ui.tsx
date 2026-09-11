@@ -1,6 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { ReactEcsRenderer } from '@dcl/sdk/react-ecs'
-import { InputAction } from '@dcl/sdk/ecs'
+import { AudioSource, engine, InputAction } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { isMobile } from '@dcl/sdk/platform'
 import {
@@ -45,6 +45,206 @@ const DIR_KEY: Record<Direction, string> = {
 
 type PercentUnit = `${number}%`
 
+const BEAT_SCORE_LOGO = 'assets/images/beatscore.png'
+const BUTTON_SOUND = 'public/sounds/decentraland-button.mp3'
+let buttonSoundEntity = engine.RootEntity
+
+type ButtonTone = 'cyan' | 'magenta' | 'green' | 'gold'
+
+const BUTTON_GRADIENTS: Record<ButtonTone, { top: Color4; bottom: Color4; border: Color4 }> = {
+  cyan: {
+    top: Color4.create(0.04, 0.68, 0.88, 0.98),
+    bottom: Color4.create(0.02, 0.20, 0.46, 0.98),
+    border: Color4.create(0.38, 0.94, 1.0, 1),
+  },
+  magenta: {
+    top: Color4.create(0.90, 0.15, 0.70, 0.98),
+    bottom: Color4.create(0.28, 0.05, 0.50, 0.98),
+    border: Color4.create(1.0, 0.48, 0.92, 1),
+  },
+  green: {
+    top: Color4.create(0.08, 0.72, 0.48, 0.98),
+    bottom: Color4.create(0.02, 0.25, 0.24, 0.98),
+    border: Color4.create(0.42, 1.0, 0.76, 1),
+  },
+  gold: {
+    top: Color4.create(1.0, 0.62, 0.08, 0.98),
+    bottom: Color4.create(0.62, 0.14, 0.06, 0.98),
+    border: Color4.create(1.0, 0.86, 0.28, 1),
+  },
+}
+
+function mixColor(a: Color4, b: Color4, amount: number): Color4 {
+  return Color4.create(
+    a.r + (b.r - a.r) * amount,
+    a.g + (b.g - a.g) * amount,
+    a.b + (b.b - a.b) * amount,
+    a.a + (b.a - a.a) * amount,
+  )
+}
+
+function playButtonSound(): void {
+  if (buttonSoundEntity === engine.RootEntity) return
+  AudioSource.playSound(buttonSoundEntity, BUTTON_SOUND, true)
+}
+
+function runButtonAction(action: () => void): void {
+  playButtonSound()
+  action()
+}
+
+function BeatScoreLogo({ compact = false }: { compact?: boolean }): ReactEcs.JSX.Element {
+  const mobile = isMobile()
+  const width = compact ? (mobile ? 116 : 154) : (mobile ? 128 : 238)
+  const height = compact ? (mobile ? 63 : 84) : (mobile ? 70 : 130)
+
+  return (
+    <UiEntity
+      uiTransform={{ width, height, margin: { bottom: compact ? 2 : mobile ? 2 : 4 }, flexShrink: 0 }}
+      uiBackground={{ texture: { src: BEAT_SCORE_LOGO }, textureMode: 'stretch' }}
+    />
+  )
+}
+
+function GradientFill({ tone }: { tone: ButtonTone }): ReactEcs.JSX.Element {
+  const gradient = BUTTON_GRADIENTS[tone]
+  const bands = 8
+
+  return (
+    <UiEntity
+      uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', pointerFilter: 'none' }}
+    >
+      {Array.from({ length: bands }, (_, index) => (
+        <UiEntity
+          key={`gradient-${tone}-${index}`}
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: `${index * (100 / bands)}%` as PercentUnit, left: 0 },
+            width: '100%',
+            height: `${100 / bands + 0.5}%` as PercentUnit,
+            pointerFilter: 'none',
+          }}
+          uiBackground={{ color: mixColor(gradient.top, gradient.bottom, index / (bands - 1)) }}
+        />
+      ))}
+    </UiEntity>
+  )
+}
+
+function MenuButton({
+  label,
+  tone,
+  onClick,
+  width,
+  height,
+  fontSize,
+  marginBottom = 0,
+}: {
+  label: string
+  tone: ButtonTone
+  onClick: () => void
+  width: number | PercentUnit
+  height: number
+  fontSize: number
+  marginBottom?: number
+}): ReactEcs.JSX.Element {
+  const gradient = BUTTON_GRADIENTS[tone]
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width,
+        height,
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: { bottom: marginBottom },
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: gradient.border,
+        overflow: 'hidden',
+      }}
+      uiBackground={{ color: gradient.bottom }}
+      onMouseDown={() => runButtonAction(onClick)}
+    >
+      <GradientFill tone={tone} />
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 0, left: 0 },
+          width: '100%',
+          height: '42%',
+          pointerFilter: 'none',
+        }}
+        uiBackground={{ color: Color4.create(1, 1, 1, 0.09) }}
+      />
+      <Label
+        value={label}
+        fontSize={fontSize}
+        color={Color4.White()}
+        uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', zIndex: 2, pointerFilter: 'none' }}
+        textAlign="middle-center"
+      />
+    </UiEntity>
+  )
+}
+
+function TutorialStep({ number, title, detail, color }: { number: string; title: string; detail: string; color: Color4 }): ReactEcs.JSX.Element {
+  const mobile = isMobile()
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width: '31%',
+        height: mobile ? 50 : 68,
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: Color4.create(color.r, color.g, color.b, 0.62),
+        padding: { top: 3, right: 4, bottom: 3, left: 4 },
+      }}
+      uiBackground={{ color: Color4.create(color.r * 0.12, color.g * 0.12, color.b * 0.12, 0.88) }}
+    >
+      <Label value={`${number}  ${title}`} fontSize={mobile ? 12 : 16} color={color}
+        uiTransform={{ width: '100%', height: mobile ? 20 : 29 }} textAlign="middle-center" />
+      <Label value={detail} fontSize={mobile ? 10 : 13} color={Color4.create(0.92, 0.94, 1, 1)}
+        uiTransform={{ width: '100%', height: mobile ? 18 : 25 }} textAlign="middle-center" />
+    </UiEntity>
+  )
+}
+
+function QuickTutorial(): ReactEcs.JSX.Element {
+  const mobile = isMobile()
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width: mobile ? '94%' : '88%',
+        height: mobile ? 76 : 104,
+        flexShrink: 0,
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: { top: 6, right: 8, bottom: 7, left: 8 },
+        margin: { bottom: mobile ? 5 : 10 },
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(0.36, 0.48, 0.80, 0.72),
+      }}
+      uiBackground={{ color: Color4.create(0.025, 0.03, 0.10, 0.94) }}
+    >
+      <Label value="QUICK TUTORIAL" fontSize={mobile ? 14 : 17} color={Color4.create(1, 0.84, 0.24, 1)}
+        uiTransform={{ width: '100%', height: mobile ? 18 : 23, margin: { bottom: 4 } }} textAlign="middle-center" />
+      <UiEntity uiTransform={{ width: '100%', height: mobile ? 50 : 68, flexDirection: 'row', justifyContent: 'space-between' }}>
+        <TutorialStep number="1" title="READ" detail="MATCH THE ARROWS" color={Color4.create(0.38, 0.90, 1, 1)} />
+        <TutorialStep number="2" title="MOVE" detail={mobile ? 'TAP DIRECTIONS' : 'A  S  W  D'} color={Color4.create(0.52, 1, 0.64, 1)} />
+        <TutorialStep number="3" title="HIT" detail={mobile ? 'JUMP ON GOLD' : 'SPACE ON GOLD'} color={Color4.create(1, 0.50, 0.88, 1)} />
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
 function getDanceModeDisplayLabel(): string {
   if (gameState.measureCount >= TOTAL_MEASURES - 1) return 'FINAL MOVE'
   return getRoundModeLabel(gameState.roundMode)
@@ -60,9 +260,12 @@ function CloseButton({ onClick }: { onClick: () => void }): ReactEcs.JSX.Element
         height: 42,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(1.0, 0.40, 0.86, 0.85),
       }}
       uiBackground={{ color: Color4.create(0.04, 0.03, 0.08, 0.92) }}
-      onMouseDown={onClick}
+      onMouseDown={() => runButtonAction(onClick)}
     >
       <Label
         value="X"
@@ -85,9 +288,12 @@ function BackButton({ onClick }: { onClick: () => void }): ReactEcs.JSX.Element 
         height: 42,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(0.42, 0.82, 1.0, 0.85),
       }}
       uiBackground={{ color: Color4.create(0.06, 0.06, 0.14, 0.92) }}
-      onMouseDown={onClick}
+      onMouseDown={() => runButtonAction(onClick)}
     >
       <Label
         value="BACK"
@@ -115,6 +321,7 @@ function ArrowBox({
   inverted: boolean
   state: 'done' | 'active' | 'pending' | 'failed'
 }): ReactEcs.JSX.Element {
+  const mobile = isMobile()
   const c = inverted ? Color4.create(1.00, 0.12, 0.12, 1) : DIR_COLOR[displayDirection]
   const sym = state === 'done' && inverted ? DIR_SYMBOL[inputDirection] : DIR_SYMBOL[displayDirection]
 
@@ -143,18 +350,21 @@ function ArrowBox({
   return (
     <UiEntity
       uiTransform={{
-        width: 58,
-        height: 58,
-        margin: { left: 3, right: 3 },
+        width: mobile ? 46 : 58,
+        height: mobile ? 46 : 58,
+        margin: { left: mobile ? 2 : 3, right: mobile ? 2 : 3 },
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 1,
+        borderRadius: mobile ? 8 : 10,
+        borderWidth: state === 'active' ? 2 : 1,
+        borderColor: Color4.create(fg.r, fg.g, fg.b, state === 'active' ? 0.90 : 0.36),
       }}
       uiBackground={{ color: bg }}
     >
       <Label
         value={sym}
-        fontSize={29}
+        fontSize={mobile ? 24 : 29}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -167,6 +377,7 @@ function ArrowBox({
 // Keynote bar — the row of arrows to type
 // ──────────────────────────────────────────────────────────
 function KeynoteBar(): ReactEcs.JSX.Element {
+  const mobile = isMobile()
   const seq   = gameState.currentSequence
   const idx   = gameState.inputIndex
   const failed = gameState.sequenceFailed
@@ -184,7 +395,7 @@ function KeynoteBar(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: 126, left: 0 },
+        position: { top: mobile ? 112 : 126, left: 0 },
         width: '100%',
         height,
         flexDirection: 'row',
@@ -216,6 +427,7 @@ function KeynoteBar(): ReactEcs.JSX.Element {
 // Rhythm timeline — moving ball + judgment zone
 // ──────────────────────────────────────────────────────────
 function RhythmTimeline(): ReactEcs.JSX.Element {
+  const mobile = isMobile()
   const p = gameState.measureProgress
   const spaceWindow = getSpaceWindow()
 
@@ -241,16 +453,17 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   // Space key: "hit" if space already pressed this measure
   const spaceFlash = gameState.spaceFlash
   const spaceColor = Color4.create(1, 0.9 + spaceFlash * 0.1, 0.2 + spaceFlash * 0.3, 0.6 + spaceFlash * 0.4)
-  const hitLabel = isMobile() ? 'JUMP=HIT' : 'SPACE=HIT'
+  const hitLabel = mobile ? 'JUMP=HIT' : 'SPACE=HIT'
 
   return (
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: 204, left: '10%' },
-        width: '80%',
+        position: { top: mobile ? 174 : 204, left: mobile ? '6%' : '10%' },
+        width: mobile ? '88%' : '80%',
         height: 72,
         flexDirection: 'column',
+        borderRadius: 12,
       }}
     >
       {/* Row: labels above the track */}
@@ -282,7 +495,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
 
       {/* Track */}
       <UiEntity
-        uiTransform={{ width: '100%', height: 34, positionType: 'relative' }}
+        uiTransform={{ width: '100%', height: 34, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
         {/* Judgment zone glow */}
@@ -316,6 +529,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             position: { top: 4, left: ballLeftPct },
             width: 26,
             height: 26,
+            borderRadius: 13,
           }}
           uiBackground={{ color: ballColor }}
         />
@@ -383,6 +597,9 @@ function ScorePanel(): ReactEcs.JSX.Element {
         flexDirection: 'column',
         alignItems: 'flex-end',
         padding: { top: mobile ? 9 : 10, right: mobile ? 12 : 14, bottom: 10, left: 10 },
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: Color4.create(0.30, 0.78, 1.0, 0.70),
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}
     >
@@ -426,6 +643,9 @@ function ComboDisplay(): ReactEcs.JSX.Element | null {
         flexDirection: 'column',
         alignItems: 'flex-start',
         padding: { top: 10, left: 14 },
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: Color4.create(1.0, 0.64, 0.18, 0.68),
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}
     >
@@ -471,6 +691,9 @@ function ModeBadge(): ReactEcs.JSX.Element {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: { top: 6, right: 10, bottom: 6, left: 10 },
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: Color4.create(color.r, color.g, color.b, 0.62),
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}
     >
@@ -571,6 +794,9 @@ function MatchPositionPanel(): ReactEcs.JSX.Element {
         alignItems: 'center',
         justifyContent: 'center',
         padding: { top: mobile ? 10 : 12, right: mobile ? 10 : 12, bottom: mobile ? 10 : 12, left: mobile ? 10 : 12 },
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: Color4.create(1.0, 0.76, 0.22, 0.68),
       }}
       uiBackground={{ color: Color4.create(0.02, 0.02, 0.08, 0.78) }}
     >
@@ -663,6 +889,9 @@ function ReadyPlayersPanel(): ReactEcs.JSX.Element {
                 flexDirection: 'column',
                 alignItems: 'center',
                 margin: { left: mobile ? 2 : 3, right: mobile ? 2 : 3 },
+                borderRadius: 10,
+                borderWidth: player.isLocal ? 1 : 0,
+                borderColor: Color4.create(0.40, 1.0, 0.85, 0.72),
               }}
               uiBackground={{ color: player.isLocal ? Color4.create(0.07, 0.28, 0.32, 0.68) : Color4.create(0.05, 0.05, 0.12, 0.62) }}
             >
@@ -706,6 +935,9 @@ function RankAvatarBadge(): ReactEcs.JSX.Element {
         alignItems: 'flex-start',
         justifyContent: 'center',
         padding: { top: 6, right: 10, bottom: 6, left: 10 },
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(0.72, 0.42, 1.0, 0.58),
       }}
       uiBackground={{ color: Color4.create(0.02, 0.02, 0.08, 0.66) }}
     >
@@ -740,6 +972,9 @@ function DailyGoalsPanel(): ReactEcs.JSX.Element {
         height: 134,
         flexDirection: 'column',
         padding: { top: 8, right: 10, bottom: 8, left: 10 },
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(0.34, 0.70, 1.0, 0.50),
       }}
       uiBackground={{ color: Color4.create(0.02, 0.02, 0.07, 0.62) }}
     >
@@ -797,6 +1032,9 @@ function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEc
           ? { top: 6, right: 6, bottom: 6, left: 6 }
           : { top: mobile ? 5 : 8, right: 10, bottom: mobile ? 5 : 8, left: 10 },
         margin: { bottom: compact ? 8 : mobile ? 8 : 12 },
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color4.create(0.44, 0.50, 0.86, 0.54),
       }}
       uiBackground={{ color: Color4.create(0.02, 0.02, 0.07, compact ? 0.70 : 0.62) }}
     >
@@ -860,6 +1098,9 @@ function OfficialTouchButton({
         height: size,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: Math.floor(size / 2),
+        borderWidth: 2,
+        borderColor: Color4.create(tone.r, tone.g, tone.b, 0.62),
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.58) }}
       uiInputBinding={{ actions: [action] }}
@@ -870,6 +1111,7 @@ function OfficialTouchButton({
           height: size - 12,
           alignItems: 'center',
           justifyContent: 'center',
+          borderRadius: Math.floor((size - 12) / 2),
         }}
         uiBackground={{ color: Color4.create(tone.r * 0.18, tone.g * 0.18, tone.b * 0.18, 0.78) }}
       >
@@ -910,11 +1152,12 @@ function OfficialMobileControls(): ReactEcs.JSX.Element | null {
             height: 101,
             alignItems: 'center',
             justifyContent: 'center',
+            borderRadius: 50,
           }}
           uiBackground={{ color: Color4.create(0, 0, 0, 0.38) }}
         >
           <UiEntity
-            uiTransform={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+            uiTransform={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 }}
             uiBackground={{ color: Color4.create(0.90, 0.90, 0.96, 0.24) }}
           />
         </UiEntity>
@@ -936,12 +1179,15 @@ function OfficialMobileControls(): ReactEcs.JSX.Element | null {
             height: 206,
             alignItems: 'center',
             justifyContent: 'center',
+            borderRadius: 103,
+            borderWidth: 3,
+            borderColor: Color4.create(1.0, 0.62, 0.18, 0.72),
           }}
           uiBackground={{ color: Color4.create(0, 0, 0, 0.62) }}
           uiInputBinding={{ actions: [InputAction.IA_JUMP] }}
         >
           <UiEntity
-            uiTransform={{ width: 170, height: 170, alignItems: 'center', justifyContent: 'center' }}
+            uiTransform={{ width: 170, height: 170, alignItems: 'center', justifyContent: 'center', borderRadius: 85 }}
             uiBackground={{ color: Color4.create(DIR_COLOR.right.r * 0.42, DIR_COLOR.right.g * 0.42, DIR_COLOR.right.b * 0.42, 0.90) }}
           >
             <Label
@@ -984,6 +1230,9 @@ function KeyHints(): ReactEcs.JSX.Element {
             margin: { left: 4, right: 4 },
             alignItems: 'center',
             justifyContent: 'center',
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: Color4.create(DIR_COLOR[d].r, DIR_COLOR[d].g, DIR_COLOR[d].b, 0.46),
           }}
           uiBackground={{ color: Color4.create(0.08, 0.08, 0.18, 0.7) }}
         >
@@ -1004,6 +1253,7 @@ function KeyHints(): ReactEcs.JSX.Element {
             margin: { left: 12, right: 4 },
             alignItems: 'center',
             justifyContent: 'center',
+            borderRadius: 8,
           }}
           uiBackground={{ color: Color4.create(0.26, 0.02, 0.02, 0.82) }}
         >
@@ -1023,6 +1273,7 @@ function KeyHints(): ReactEcs.JSX.Element {
           margin: { left: 12, right: 4 },
           alignItems: 'center',
           justifyContent: 'center',
+          borderRadius: 8,
         }}
         uiBackground={{ color: Color4.create(0.15, 0.12, 0.03, 0.7) }}
       >
@@ -1043,53 +1294,45 @@ function KeyHints(): ReactEcs.JSX.Element {
 // ──────────────────────────────────────────────────────────
 function LobbyChoiceScreen(): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const panelWidth = mobile ? '62%' : '44%'
-  const panelLeft = mobile ? '19%' : '28%'
-  const panelHeight = mobile ? 318 : 430
-  const buttonWidth = mobile ? '86%' : 320
+  const buttonWidth = mobile ? '88%' : 360
 
   return (
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: mobile ? '16%' : '22%', left: panelLeft },
-        width: panelWidth,
-        height: panelHeight,
-        flexDirection: 'column',
+        position: { top: 0, left: 0 },
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: { top: mobile ? 10 : 22, bottom: mobile ? 10 : 22, left: mobile ? 14 : 24, right: mobile ? 14 : 24 },
       }}
-      uiBackground={{ color: Color4.create(0, 0, 0, 0.82) }}
     >
-      <CloseButton onClick={watchLiveMode} />
-      <Label value="DROP BEAT" fontSize={mobile ? 38 : 42}
-        color={Color4.create(1.0, 0.38, 0.88, 1)}
-        uiTransform={{ width: '100%', height: mobile ? 44 : 54, margin: { bottom: mobile ? 2 : 8 } }} textAlign="middle-center" />
-
-      <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 16 : 18}
-        color={Color4.create(0.35, 0.9, 1.0, 1)}
-        uiTransform={{ width: '100%', height: mobile ? 22 : 28, margin: { bottom: mobile ? 5 : 10 } }} textAlign="middle-center" />
-
-      <DailyGoalsMenuCard />
-
       <UiEntity
-        uiTransform={{ width: buttonWidth, height: mobile ? 42 : 58, alignItems: 'center', justifyContent: 'center', margin: { bottom: mobile ? 8 : 12 } }}
-        uiBackground={{ color: Color4.create(0.06, 0.18, 0.26, 0.92) }}
-        onMouseDown={openPlayMenu}
+        uiTransform={{
+          positionType: 'relative',
+          width: mobile ? '94%' : 560,
+          height: mobile ? '94%' : 620,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { top: mobile ? 10 : 18, bottom: mobile ? 10 : 18, left: mobile ? 12 : 24, right: mobile ? 12 : 24 },
+          borderRadius: mobile ? 20 : 24,
+          borderWidth: 2,
+          borderColor: Color4.create(0.46, 0.58, 1.0, 0.78),
+        }}
+        uiBackground={{ color: Color4.create(0.012, 0.012, 0.045, 0.94) }}
       >
-        <Label value="DANCE" fontSize={mobile ? 18 : 22}
-          color={Color4.create(0.50, 0.90, 1.0, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
-      </UiEntity>
-      <UiEntity
-        uiTransform={{ width: buttonWidth, height: mobile ? 42 : 58, alignItems: 'center', justifyContent: 'center' }}
-        uiBackground={{ color: Color4.create(0.18, 0.10, 0.30, 0.92) }}
-        onMouseDown={watchLiveMode}
-      >
-        <Label value="JUST WATCH" fontSize={mobile ? 18 : 22}
-          color={Color4.create(0.90, 0.55, 1.0, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
+        <CloseButton onClick={watchLiveMode} />
+        <BeatScoreLogo />
+        <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 15 : 19}
+          color={Color4.create(0.46, 0.92, 1.0, 1)}
+          uiTransform={{ width: '100%', height: mobile ? 20 : 28, margin: { bottom: mobile ? 4 : 8 } }} textAlign="middle-center" />
+        <QuickTutorial />
+        <DailyGoalsMenuCard compact={mobile} />
+        <MenuButton label="DANCE" tone="cyan" onClick={openPlayMenu} width={buttonWidth}
+          height={mobile ? 44 : 60} fontSize={mobile ? 20 : 26} marginBottom={mobile ? 7 : 12} />
+        <MenuButton label="JUST WATCH" tone="magenta" onClick={watchLiveMode} width={buttonWidth}
+          height={mobile ? 44 : 60} fontSize={mobile ? 19 : 24} />
       </UiEntity>
     </UiEntity>
   )
@@ -1097,55 +1340,47 @@ function LobbyChoiceScreen(): ReactEcs.JSX.Element {
 
 function IdleScreen(): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const panelWidth = mobile ? '60%' : '46%'
-  const panelLeft = mobile ? '20%' : '27%'
-  const panelHeight = mobile ? 298 : 350
-  const buttonWidth = mobile ? '86%' : 360
+  const buttonWidth = mobile ? '88%' : 360
 
   return (
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: mobile ? '14%' : '18%', left: panelLeft },
-        width: panelWidth,
-        height: panelHeight,
-        flexDirection: 'column',
+        position: { top: 0, left: 0 },
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: { top: mobile ? 14 : 22, bottom: mobile ? 14 : 22, left: mobile ? 14 : 24, right: mobile ? 14 : 24 },
       }}
-      uiBackground={{ color: Color4.create(0, 0, 0, 0.80) }}
     >
-      <BackButton onClick={returnToLobby} />
-      <CloseButton onClick={watchLiveMode} />
-      <Label value="DROP BEAT" fontSize={mobile ? 38 : 44}
-        color={Color4.create(1.0, 0.38, 0.88, 1)}
-        uiTransform={{ width: '100%', height: mobile ? 46 : 58 }} textAlign="middle-center" />
-      <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 18 : 18}
-        color={Color4.create(0.35, 0.9, 1.0, 1)}
-        uiTransform={{ width: '100%', height: mobile ? 30 : 30, margin: { bottom: mobile ? 10 : 14 } }} textAlign="middle-center" />
-      <Label value="CHOOSE MODE" fontSize={mobile ? 18 : 21}
-        color={Color4.create(0.40, 1.0, 0.85, 1)}
-        uiTransform={{ width: '100%', height: mobile ? 28 : 34 }} textAlign="middle-center" />
-      <Label value=" " fontSize={4} color={Color4.create(0,0,0,0)}
-        uiTransform={{ width: '100%', height: mobile ? 8 : 12 }} textAlign="middle-center" />
       <UiEntity
-        uiTransform={{ width: buttonWidth, height: mobile ? 50 : 58, alignItems: 'center', justifyContent: 'center', margin: { bottom: mobile ? 9 : 12 } }}
-        uiBackground={{ color: Color4.create(0.18, 0.19, 0.23, 0.94) }}
-        onMouseDown={readyForMultiplayer}
+        uiTransform={{
+          positionType: 'relative',
+          width: mobile ? '92%' : 520,
+          height: mobile ? '86%' : 430,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { top: mobile ? 12 : 22, bottom: mobile ? 12 : 22, left: mobile ? 14 : 24, right: mobile ? 14 : 24 },
+          borderRadius: mobile ? 20 : 24,
+          borderWidth: 2,
+          borderColor: Color4.create(0.56, 0.38, 0.92, 0.82),
+        }}
+        uiBackground={{ color: Color4.create(0.012, 0.012, 0.045, 0.94) }}
       >
-        <Label value="MULTIPLAYER" fontSize={mobile ? 20 : 23}
-          color={Color4.create(0.40, 1.0, 0.85, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
-      </UiEntity>
-      <UiEntity
-        uiTransform={{ width: buttonWidth, height: mobile ? 50 : 58, alignItems: 'center', justifyContent: 'center' }}
-        uiBackground={{ color: Color4.create(0.18, 0.10, 0.30, 0.94) }}
-        onMouseDown={startSoloMode}
-      >
-        <Label value="SOLO MODE" fontSize={mobile ? 20 : 23}
-          color={Color4.create(0.90, 0.55, 1.0, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
+        <BackButton onClick={returnToLobby} />
+        <CloseButton onClick={watchLiveMode} />
+        <BeatScoreLogo compact />
+        <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 16 : 19}
+          color={Color4.create(0.46, 0.92, 1.0, 1)}
+          uiTransform={{ width: '100%', height: mobile ? 24 : 28, margin: { bottom: mobile ? 3 : 6 } }} textAlign="middle-center" />
+        <Label value="CHOOSE YOUR MODE" fontSize={mobile ? 20 : 24}
+          color={Color4.create(1.0, 0.84, 0.24, 1)}
+          uiTransform={{ width: '100%', height: mobile ? 30 : 38, margin: { bottom: mobile ? 7 : 12 } }} textAlign="middle-center" />
+        <MenuButton label="MULTIPLAYER" tone="green" onClick={readyForMultiplayer} width={buttonWidth}
+          height={mobile ? 52 : 64} fontSize={mobile ? 22 : 26} marginBottom={mobile ? 9 : 13} />
+        <MenuButton label="SOLO MODE" tone="magenta" onClick={startSoloMode} width={buttonWidth}
+          height={mobile ? 52 : 64} fontSize={mobile ? 22 : 26} />
       </UiEntity>
     </UiEntity>
   )
@@ -1160,15 +1395,18 @@ function ReadyScreen(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: mobile ? { top: '10%', left: '22%' } : { top: '11%', left: '26.5%' },
-        width: mobile ? '56%' : '47%',
-        height: mobile ? 400 : 530,
+        position: mobile ? { top: '3%', left: '3%' } : { top: '11%', left: '26.5%' },
+        width: mobile ? '94%' : '47%',
+        height: mobile ? '94%' : 530,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
         padding: { top: mobile ? 12 : 22, bottom: mobile ? 12 : 22, left: mobile ? 12 : 22, right: mobile ? 12 : 22 },
+        borderRadius: mobile ? 20 : 24,
+        borderWidth: 2,
+        borderColor: Color4.create(0.38, 0.90, 0.74, 0.82),
       }}
-      uiBackground={{ color: Color4.create(0, 0, 0, 0.82) }}
+      uiBackground={{ color: Color4.create(0.01, 0.02, 0.045, 0.94) }}
     >
       <BackButton onClick={cancelMultiplayerReady} />
       <CloseButton onClick={watchLiveMode} />
@@ -1182,28 +1420,9 @@ function ReadyScreen(): ReactEcs.JSX.Element {
         color={Color4.create(0.80, 0.80, 0.90, 1)}
         uiTransform={{ width: '100%', height: 28, margin: { bottom: mobile ? 8 : 12 } }} textAlign="middle-center" />
       <ReadyPlayersPanel />
-      <UiEntity
-        uiTransform={{
-          width: buttonWidth,
-          height: mobile ? 56 : 60,
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: { top: mobile ? 10 : 14 },
-        }}
-        uiBackground={{
-          color: localIsReady
-            ? Color4.create(0.04, 0.40, 0.18, 0.94)
-            : Color4.create(0.18, 0.19, 0.23, 0.94),
-        }}
-        onMouseDown={toggleMultiplayerReady}
-      >
-        <Label
-          value={localIsReady ? 'READY ✓' : 'GET READY'}
-          fontSize={mobile ? 22 : 24}
-          color={localIsReady ? Color4.create(0.78, 1.0, 0.78, 1) : Color4.create(0.78, 0.82, 0.88, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
-          textAlign="middle-center"
-        />
+      <UiEntity uiTransform={{ width: '100%', height: mobile ? 66 : 78, alignItems: 'center', justifyContent: 'center', margin: { top: mobile ? 8 : 12 } }}>
+        <MenuButton label={localIsReady ? 'READY' : 'GET READY'} tone={localIsReady ? 'green' : 'cyan'}
+          onClick={toggleMultiplayerReady} width={buttonWidth} height={mobile ? 54 : 62} fontSize={mobile ? 23 : 27} />
       </UiEntity>
     </UiEntity>
   )
@@ -1223,6 +1442,9 @@ function SidePlayMenu(): ReactEcs.JSX.Element {
         alignItems: 'center',
         justifyContent: 'center',
         padding: { top: 8, right: 8, bottom: 8, left: 8 },
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Color4.create(0.48, 0.56, 0.92, 0.72),
       }}
       uiBackground={{ color: Color4.create(0.01, 0.01, 0.05, 0.78) }}
     >
@@ -1238,32 +1460,11 @@ function SidePlayMenu(): ReactEcs.JSX.Element {
           textAlign="middle-center"
         />
       </UiEntity>
-      <UiEntity
-        uiTransform={{ width: '100%', height: mobile ? 46 : 52, alignItems: 'center', justifyContent: 'center', margin: { top: 8 } }}
-        uiBackground={{ color: Color4.create(0.05, 0.30, 0.40, 0.94) }}
-        onMouseDown={readyForMultiplayer}
-      >
-        <Label
-          value="MULTI"
-          fontSize={mobile ? 18 : 20}
-          color={Color4.create(0.40, 1.0, 0.85, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
-          textAlign="middle-center"
-        />
-      </UiEntity>
-      <UiEntity
-        uiTransform={{ width: '100%', height: mobile ? 46 : 52, alignItems: 'center', justifyContent: 'center', margin: { top: 8 } }}
-        uiBackground={{ color: Color4.create(0.18, 0.10, 0.30, 0.94) }}
-        onMouseDown={startSoloMode}
-      >
-        <Label
-          value="SOLO"
-          fontSize={mobile ? 18 : 20}
-          color={Color4.create(0.90, 0.55, 1.0, 1)}
-          uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
-          textAlign="middle-center"
-        />
-      </UiEntity>
+      <UiEntity uiTransform={{ width: '100%', height: 8 }} />
+      <MenuButton label="MULTI" tone="green" onClick={readyForMultiplayer} width={'100%'}
+        height={mobile ? 46 : 52} fontSize={mobile ? 18 : 21} marginBottom={8} />
+      <MenuButton label="SOLO" tone="magenta" onClick={startSoloMode} width={'100%'}
+        height={mobile ? 46 : 52} fontSize={mobile ? 18 : 21} />
       <DailyGoalsMenuCard compact />
     </UiEntity>
   )
@@ -1293,13 +1494,16 @@ function GameOverScreen(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: mobile ? { top: '13%', left: '22%' } : { top: '12%', left: '18.5%' },
-        width: mobile ? '56%' : '63%',
-        height: mobile ? 416 : 468,
+        position: mobile ? { top: '3%', left: '3%' } : { top: '12%', left: '18.5%' },
+        width: mobile ? '94%' : '63%',
+        height: mobile ? '94%' : 468,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: { top: mobile ? 16 : 20, bottom: mobile ? 16 : 20, left: mobile ? 16 : 22, right: mobile ? 16 : 22 },
+        padding: { top: mobile ? 12 : 20, bottom: mobile ? 12 : 20, left: mobile ? 12 : 22, right: mobile ? 12 : 22 },
+        borderRadius: mobile ? 20 : 24,
+        borderWidth: 2,
+        borderColor: Color4.create(0.76, 0.42, 1.0, 0.78),
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.85) }}
     >
@@ -1307,9 +1511,9 @@ function GameOverScreen(): ReactEcs.JSX.Element {
         color={Color4.create(0.85, 0.85, 0.85, 1)}
         uiTransform={{ width: '100%', height: mobile ? 48 : 58 }} textAlign="middle-center" />
 
-      <Label value={starText} fontSize={mobile ? 74 : 91}
+      <Label value={starText} fontSize={mobile ? 54 : 91}
         color={starColor}
-        uiTransform={{ width: '100%', height: mobile ? 88 : 104 }} textAlign="middle-center" />
+        uiTransform={{ width: '100%', height: mobile ? 64 : 104 }} textAlign="middle-center" />
 
       <Label value={`SCORE  ${String(s).padStart(9, '0')}`} fontSize={mobile ? 31 : 41}
         color={Color4.create(1.0, 0.88, 0.18, 1)}
@@ -1334,7 +1538,7 @@ function GameOverScreen(): ReactEcs.JSX.Element {
           {finalEntries.map((entry, i) => (
             <UiEntity
               key={`match-result-${entry.playerId}-${i}`}
-              uiTransform={{ width: '100%', height: mobile ? 22 : 30, margin: { bottom: 2 }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: { left: 10, right: 10 } }}
+              uiTransform={{ width: '100%', height: mobile ? 22 : 30, margin: { bottom: 2 }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: { left: 10, right: 10 }, borderRadius: 8 }}
               uiBackground={{ color: entry.isLocal ? Color4.create(0.08, 0.26, 0.34, 0.78) : Color4.create(0.06, 0.06, 0.12, 0.68) }}
             >
               <Label value={`${placementLabel(i)}  ${entry.isLocal ? 'YOU' : String(entry.name).slice(0, 12)}`} fontSize={16}
@@ -1377,8 +1581,8 @@ function AuditionUI(): ReactEcs.JSX.Element {
           {gameState.playMode === 'multiplayer' ? <MatchPositionPanel /> : null}
           {gameState.playMode === 'solo' ? <ScorePanel /> : null}
           <ModeBadge />
-          <RankAvatarBadge />
-          <DailyGoalsPanel />
+          {!isMobile() ? <RankAvatarBadge /> : null}
+          {!isMobile() ? <DailyGoalsPanel /> : null}
           <KeynoteBar />
           {gameState.roundState === 'active' ? <RhythmTimeline /> : null}
           <OfficialMobileControls />
@@ -1394,5 +1598,13 @@ function AuditionUI(): ReactEcs.JSX.Element {
 // Public initialiser
 // ──────────────────────────────────────────────────────────
 export function setupUI(): void {
+  buttonSoundEntity = engine.addEntity()
+  AudioSource.create(buttonSoundEntity, {
+    audioClipUrl: BUTTON_SOUND,
+    playing: false,
+    volume: 0.55,
+    loop: false,
+    global: true,
+  })
   ReactEcsRenderer.setUiRenderer(AuditionUI)
 }
