@@ -95,8 +95,8 @@ function runButtonAction(action: () => void): void {
 
 function BeatScoreLogo({ compact = false }: { compact?: boolean }): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const width = compact ? (mobile ? 148 : 176) : (mobile ? 220 : 290)
-  const height = compact ? (mobile ? 85 : 102) : (mobile ? 127 : 167)
+  const width = compact ? (mobile ? 138 : 176) : (mobile ? 170 : 290)
+  const height = compact ? (mobile ? 79 : 102) : (mobile ? 98 : 167)
 
   return (
     <UiEntity
@@ -175,7 +175,8 @@ function MenuButton({
 
 function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: Color4; wide?: boolean }): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const size = mobile ? 72 : 66
+  const size = mobile ? 64 : 66
+  const verticalTriangle = symbol === '▲' || symbol === '▼'
 
   return (
     <UiEntity
@@ -191,7 +192,7 @@ function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: C
       }}
       uiBackground={{ color: Color4.create(color.r * 0.13, color.g * 0.13, color.b * 0.13, 0.96) }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : (mobile ? 52 : 42)} color={Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 48 : 42)} color={Color4.White()}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
     </UiEntity>
   )
@@ -219,9 +220,9 @@ function SequenceVisual(): ReactEcs.JSX.Element {
   return (
     <UiEntity uiTransform={{ width: '100%', height: isMobile() ? 58 : 78, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
       <KeyboardKey symbol="◀" color={DIR_COLOR.left} />
-      <KeyboardKey symbol="↑" color={DIR_COLOR.up} />
+      <KeyboardKey symbol="▲" color={DIR_COLOR.up} />
       <KeyboardKey symbol="▶" color={DIR_COLOR.right} />
-      <KeyboardKey symbol="↓" color={DIR_COLOR.down} />
+      <KeyboardKey symbol="▼" color={DIR_COLOR.down} />
     </UiEntity>
   )
 }
@@ -231,11 +232,11 @@ function DirectionPadVisual(): ReactEcs.JSX.Element {
   return (
     <UiEntity uiTransform={{ width: mobile ? 270 : 240, height: mobile ? 150 : 142, flexDirection: 'column', alignItems: 'center' }}>
       <UiEntity uiTransform={{ width: '100%', height: mobile ? 72 : 68, flexDirection: 'row', justifyContent: 'center' }}>
-        <KeyboardKey symbol="↑" color={DIR_COLOR.up} />
+        <KeyboardKey symbol="▲" color={DIR_COLOR.up} />
       </UiEntity>
       <UiEntity uiTransform={{ width: '100%', height: mobile ? 72 : 68, flexDirection: 'row', justifyContent: 'center', margin: { top: mobile ? 6 : 6 } }}>
         <KeyboardKey symbol="◀" color={DIR_COLOR.left} />
-        <KeyboardKey symbol="↓" color={DIR_COLOR.down} />
+        <KeyboardKey symbol="▼" color={DIR_COLOR.down} />
         <KeyboardKey symbol="▶" color={DIR_COLOR.right} />
       </UiEntity>
     </UiEntity>
@@ -281,7 +282,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
   }
 
   return (
-    <UiEntity uiTransform={{ width: '100%', height: mobile ? 380 : 330, flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
+    <UiEntity uiTransform={{ width: '100%', height: mobile ? 360 : 330, flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
       <TutorialProgress />
       <Label value={`STEP ${tutorialPage + 1}`} fontSize={mobile ? 25 : 19} color={Color4.create(1, 0.80, 0.20, 1)}
         uiTransform={{ width: '100%', height: mobile ? 34 : 27 }} textAlign="middle-center" />
@@ -290,13 +291,13 @@ function TutorialSlide(): ReactEcs.JSX.Element {
       <Label value={descriptions[tutorialPage]} fontSize={mobile ? 27 : 20} color={Color4.create(0.74, 0.84, 0.96, 1)}
         uiTransform={{ width: '94%', height: mobile ? 42 : 34, margin: { bottom: mobile ? 8 : 14 } }} textAlign="middle-center" />
 
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 160 : 146, alignItems: 'center', justifyContent: 'center' }}>
+      <UiEntity uiTransform={{ width: '100%', height: mobile ? 142 : 146, alignItems: 'center', justifyContent: 'center' }}>
         {tutorialPage === 0 ? <SequenceVisual /> : null}
         {tutorialPage === 1 ? <DirectionPadVisual /> : null}
         {tutorialPage === 2 ? <TimingVisual /> : null}
       </UiEntity>
 
-      <UiEntity uiTransform={{ width: mobile ? 760 : 400, height: mobile ? 68 : 58, flexDirection: 'row', justifyContent: tutorialPage === 0 ? 'center' : 'space-between', margin: { top: mobile ? 8 : 10 } }}>
+      <UiEntity uiTransform={{ width: mobile ? 560 : 400, height: mobile ? 64 : 58, flexDirection: 'row', justifyContent: tutorialPage === 0 ? 'center' : 'space-between', margin: { top: mobile ? 8 : 10 } }}>
         {tutorialPage > 0 ? (
           <UiEntity
             uiTransform={{ width: '30%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: Color4.create(0.52, 0.62, 0.82, 0.72) }}
@@ -308,7 +309,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
           </UiEntity>
         ) : null}
         <MenuButton label={tutorialPage === 2 ? 'SHOW MENU' : 'NEXT'} tone={tutorialPage === 2 ? 'gold' : 'cyan'}
-          onClick={nextTutorialPage} width={tutorialPage === 0 ? (mobile ? '68%' : 280) : '66%'} height={mobile ? 68 : 58} fontSize={mobile ? 34 : 25} />
+          onClick={nextTutorialPage} width={tutorialPage === 0 ? (mobile ? '68%' : 280) : '66%'} height={mobile ? 64 : 58} fontSize={mobile ? 32 : 25} />
       </UiEntity>
     </UiEntity>
   )
@@ -395,6 +396,7 @@ function ArrowBox({
   const mobile = isMobile()
   const c = inverted ? REVERSE_COLOR : DIR_COLOR[displayDirection]
   const sym = state === 'done' && inverted ? DIR_SYMBOL[inputDirection] : DIR_SYMBOL[displayDirection]
+  const verticalTriangle = displayDirection === 'up' || displayDirection === 'down'
 
   let bg: Color4
   let fg: Color4
@@ -436,7 +438,7 @@ function ArrowBox({
       <Label
         value={sym}
         font={displayDirection === 'left' || displayDirection === 'right' ? 'monospace' : 'sans-serif'}
-        fontSize={mobile ? 38 : 34}
+        fontSize={verticalTriangle ? (mobile ? 32 : 29) : (mobile ? 38 : 34)}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -1380,8 +1382,8 @@ function LobbyChoiceScreen(): ReactEcs.JSX.Element {
       <UiEntity
         uiTransform={{
           positionType: 'relative',
-          width: mobile ? 1000 : 560,
-          height: mobile ? 650 : 620,
+          width: mobile ? 760 : 560,
+          height: mobile ? 560 : 620,
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'flex-start',
@@ -1554,6 +1556,35 @@ function SidePlayMenu(): ReactEcs.JSX.Element {
   )
 }
 
+function JumpOffButton(): ReactEcs.JSX.Element {
+  const mobile = isMobile()
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: mobile ? 180 : 194, right: mobile ? 12 : 24 },
+        width: mobile ? 190 : 170,
+        height: mobile ? 54 : 46,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: Color4.create(REVERSE_COLOR.r, REVERSE_COLOR.g, REVERSE_COLOR.b, 0.92),
+      }}
+      uiBackground={{ color: Color4.create(0.18, 0.02, 0.06, 0.90) }}
+      onMouseDown={() => runButtonAction(returnToLobby)}
+    >
+      <Label
+        value="JUMP OFF"
+        fontSize={mobile ? 25 : 21}
+        color={Color4.create(1.0, 0.76, 0.84, 1)}
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }}
+        textAlign="middle-center"
+      />
+    </UiEntity>
+  )
+}
+
 // ──────────────────────────────────────────────────────────
 // Game-over / results screen
 // ──────────────────────────────────────────────────────────
@@ -1578,9 +1609,17 @@ function GameOverScreen(): ReactEcs.JSX.Element {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: mobile ? { top: '3%', left: '3%' } : { top: '12%', left: '18.5%' },
-        width: mobile ? '94%' : '63%',
-        height: mobile ? '94%' : 468,
+        position: { top: 0, left: 0 },
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <UiEntity
+        uiTransform={{
+        width: mobile ? 720 : '63%',
+        height: mobile ? 460 : 468,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
@@ -1635,6 +1674,9 @@ function GameOverScreen(): ReactEcs.JSX.Element {
           ))}
         </UiEntity>
       ) : null}
+      <MenuButton label="CONTINUE" tone="cyan" onClick={returnToLobby} width={mobile ? 420 : 360}
+        height={mobile ? 58 : 54} fontSize={mobile ? 28 : 24} />
+      </UiEntity>
     </UiEntity>
   )
 }
@@ -1669,6 +1711,7 @@ function AuditionUI(): ReactEcs.JSX.Element {
           {!isMobile() ? <DailyGoalsPanel /> : null}
           <KeynoteBar />
           {gameState.roundState === 'active' ? <RhythmTimeline /> : null}
+          <JumpOffButton />
           <OfficialMobileControls />
           <JudgmentDisplay />
         </UiEntity>

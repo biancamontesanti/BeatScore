@@ -548,7 +548,7 @@ const HIT_SOUND_URL = 'public/sounds/clap.mp3'
 const ARROW_CLAP_SOUND_URL = 'public/sounds/clap-arrow.mp3'
 const MATCH_MUSIC_URL = 'public/sounds/beatdropmusic.mp3'
 const MATCH_MUSIC_DURATION = 158.832
-const POST_GAME_RESULT_DURATION = 15.0
+const POST_GAME_RESULT_DURATION = 6.0
 
 function playPredefinedEmote(predefinedEmote: string): void {
   void triggerEmote({ predefinedEmote }).catch(() => {})
