@@ -1,0 +1,65 @@
+{
+  "display": {
+    "title": "Drop Beat - Dance Rhythm Game",
+    "description": "A Decentraland dance rhythm game.",
+    "favicon": "favicon_asset",
+    "navmapThumbnail": "assets/images/floor.png"
+  },
+  "contact": {
+    "name": "BIBI",
+    "email": ""
+  },
+  "main": "bin/game.js",
+  "runtimeVersion": "7",
+  "scene": {
+    "base": "0,0",
+    "parcels": [
+      "0,0",
+      "1,0",
+      "0,1",
+      "1,1"
+    ]
+  },
+  "spawnPoints": [
+    {
+      "name": "audience",
+      "default": true,
+      "position": {
+        "x": [
+          8,
+          24
+        ],
+        "y": [
+          1.100000023841858,
+          2.700000047683716
+        ],
+        "z": [
+          26.399999618530273,
+          29.399999618530273
+        ]
+      },
+      "cameraTarget": {
+        "x": 16,
+        "y": 2,
+        "z": 16
+      }
+    }
+  ],
+  "creator": "",
+  "tags": [],
+  "featureToggles": {
+    "voiceChat": "enabled",
+    "portableExperiences": "enabled",
+    "nearbyVoiceChat": "enabled"
+  },
+  "skyboxConfig": {},
+  "source": {
+    "origin": "creator-hub",
+    "projectId": "9c247d54-5888-47a7-a9eb-9e4f46178f9f"
+  },
+  "landscapeTerrain": true,
+  "worldConfiguration": {
+    "name": "bibi.dcl.eth"
+  },
+  "rating": "A"
+}
