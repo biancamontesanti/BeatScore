@@ -174,10 +174,25 @@ function MenuButton({
   )
 }
 
-function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: Color4; wide?: boolean }): ReactEcs.JSX.Element {
+function KeyboardKey({
+  symbol,
+  color,
+  wide = false,
+  completed = false,
+  active = false,
+}: {
+  symbol: string
+  color: Color4
+  wide?: boolean
+  completed?: boolean
+  active?: boolean
+}): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const size = mobile ? 64 : 66
-  const verticalTriangle = symbol === '▲' || symbol === '▼'
+  const size = mobile ? 52 : 56
+  const keyColor = completed ? HIT_COLOR : color
+  const background = completed
+    ? Color4.create(0.42, 0.25, 0.01, 0.98)
+    : Color4.create(color.r * 0.13, color.g * 0.13, color.b * 0.13, 0.96)
 
   return (
     <UiEntity
@@ -188,12 +203,12 @@ function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: C
         justifyContent: 'center',
         margin: { left: mobile ? 3 : 5, right: mobile ? 3 : 5 },
         borderRadius: 12,
-        borderWidth: 2,
-        borderColor: color,
+        borderWidth: active ? 4 : 2,
+        borderColor: keyColor,
       }}
-      uiBackground={{ color: Color4.create(color.r * 0.13, color.g * 0.13, color.b * 0.13, 0.96) }}
+      uiBackground={{ color: background }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 62 : 58)} color={Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : (mobile ? 40 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
     </UiEntity>
   )
@@ -228,18 +243,36 @@ function SequenceVisual(): ReactEcs.JSX.Element {
   )
 }
 
-function DirectionPadVisual(): ReactEcs.JSX.Element {
+function SequenceCompletionVisual(): ReactEcs.JSX.Element {
   const mobile = isMobile()
+  const sequence = [
+    { symbol: '◀', color: DIR_COLOR.left },
+    { symbol: '▲', color: DIR_COLOR.up },
+    { symbol: '▶', color: DIR_COLOR.right },
+    { symbol: '▼', color: DIR_COLOR.down },
+  ]
+  const phase = Math.floor(Date.now() / 520) % 7
+  const completedCount = Math.min(sequence.length, phase)
+
   return (
-    <UiEntity uiTransform={{ width: mobile ? 270 : 240, height: mobile ? 150 : 142, flexDirection: 'column', alignItems: 'center' }}>
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 72 : 68, flexDirection: 'row', justifyContent: 'center' }}>
-        <KeyboardKey symbol="▲" color={DIR_COLOR.up} />
+    <UiEntity uiTransform={{ width: '100%', height: mobile ? 112 : 118, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <UiEntity uiTransform={{ width: '100%', height: mobile ? 58 : 62, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+        {sequence.map((key, index) => (
+          <KeyboardKey
+            symbol={key.symbol}
+            color={key.color}
+            completed={index < completedCount}
+            active={index === completedCount}
+          />
+        ))}
       </UiEntity>
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 72 : 68, flexDirection: 'row', justifyContent: 'center', margin: { top: mobile ? 6 : 6 } }}>
-        <KeyboardKey symbol="◀" color={DIR_COLOR.left} />
-        <KeyboardKey symbol="▼" color={DIR_COLOR.down} />
-        <KeyboardKey symbol="▶" color={DIR_COLOR.right} />
-      </UiEntity>
+      <Label
+        value={completedCount === sequence.length ? 'SEQUENCE COMPLETE' : `INPUT ${completedCount + 1} OF ${sequence.length}`}
+        fontSize={mobile ? 20 : 16}
+        color={completedCount === sequence.length ? HIT_COLOR : Color4.create(0.70, 0.82, 0.96, 1)}
+        uiTransform={{ width: '100%', height: mobile ? 30 : 26, margin: { top: 8 } }}
+        textAlign="middle-center"
+      />
     </UiEntity>
   )
 }
@@ -270,7 +303,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
   const descriptions = [
     'Follow the arrows from left to right.',
     mobile ? 'Tap the matching direction buttons.' : 'Press the matching arrow keys in order.',
-    mobile ? 'Tap JUMP when the marker reaches the cyan center.' : 'Press SPACE when the marker reaches the cyan center.',
+    mobile ? 'Tap JUMP at the cyan center to get a PERFECT score.' : 'Press SPACE at the cyan center to get a PERFECT score.',
   ]
 
   const nextTutorialPage = (): void => {
@@ -294,7 +327,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
 
       <UiEntity uiTransform={{ width: '100%', height: mobile ? 142 : 146, alignItems: 'center', justifyContent: 'center' }}>
         {tutorialPage === 0 ? <SequenceVisual /> : null}
-        {tutorialPage === 1 ? <DirectionPadVisual /> : null}
+        {tutorialPage === 1 ? <SequenceCompletionVisual /> : null}
         {tutorialPage === 2 ? <TimingVisual /> : null}
       </UiEntity>
 
