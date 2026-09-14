@@ -8,7 +8,10 @@ import {
   gameState,
   getSpaceWindow,
   getRoundModeLabel,
+  COOL_WINDOW,
+  GREAT_WINDOW,
   JUDGMENT_CENTER,
+  PERFECT_WINDOW,
   openPlayMenu,
   readyForMultiplayer,
   returnToLobby,
@@ -439,7 +442,7 @@ function ArrowBox({
       <Label
         value={sym}
         font={displayDirection === 'left' || displayDirection === 'right' ? 'monospace' : 'sans-serif'}
-        fontSize={verticalTriangle ? (mobile ? 32 : 29) : (mobile ? 38 : 34)}
+        fontSize={verticalTriangle ? (mobile ? 32 : 29) : (mobile ? 38 : 42)}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -520,6 +523,11 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   const visualZoneStart = Math.max(0, Math.min(1 - visualZoneWidth, JUDGMENT_CENTER - visualZoneWidth / 2))
   const jZoneLeft = `${(visualZoneStart * 100).toFixed(2)}%` as PercentUnit
   const jZoneWidth = `${(visualZoneWidth * 100).toFixed(2)}%` as PercentUnit
+  const zoneHalfProgress = visualZoneWidth / 2
+  const scoreBand = (seconds: number): number => Math.min(100, (seconds / gameState.roundDuration / zoneHalfProgress) * 100)
+  const perfectWidth = scoreBand(PERFECT_WINDOW)
+  const greatWidth = scoreBand(GREAT_WINDOW)
+  const coolWidth = scoreBand(COOL_WINDOW)
 
   const ballLeftPct = `${(p * 100).toFixed(2)}%` as PercentUnit
 
@@ -574,16 +582,30 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
         uiTransform={{ width: '100%', height: mobile ? 38 : 42, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
-        {/* Judgment zone glow */}
+        {/* Exact score bands: the color under the marker matches the awarded judgment. */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
             position: { top: 0, left: jZoneLeft },
             width: jZoneWidth,
             height: '100%',
+            overflow: 'hidden',
           }}
-          uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
-        />
+          uiBackground={{ color: Color4.create(1.0, 0.55, 0.15, 0.88) }}
+        >
+          <UiEntity
+            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - coolWidth) / 2}%` as PercentUnit }, width: `${coolWidth}%` as PercentUnit, height: '100%' }}
+            uiBackground={{ color: Color4.create(0.75, 0.35, 1.0, 0.94) }}
+          />
+          <UiEntity
+            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - greatWidth) / 2}%` as PercentUnit }, width: `${greatWidth}%` as PercentUnit, height: '100%' }}
+            uiBackground={{ color: Color4.create(0.4, 1.0, 0.55, 0.96) }}
+          />
+          <UiEntity
+            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - perfectWidth) / 2}%` as PercentUnit }, width: `${perfectWidth}%` as PercentUnit, height: '100%' }}
+            uiBackground={{ color: Color4.create(0.25, 0.85, 1.0, 1) }}
+          />
+        </UiEntity>
 
         {/* Judgment center marker (thin bright line) */}
         <UiEntity
