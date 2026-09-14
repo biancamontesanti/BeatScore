@@ -286,6 +286,7 @@ const WAIT_MIN = 0.5
 const WAIT_MAX = 1.5
 const MULTIPLAYER_READY_WINDOW = 60.0
 const MULTIPLAYER_READY_WINDOW_MS = MULTIPLAYER_READY_WINDOW * 1000
+const MAX_MULTIPLAYER_PLAYERS = 20
 const MULTIPLAYER_SCORE_CHANNEL = 'rhythm-hit-score-v2'
 const MULTIPLAYER_SYNC_INTERVAL = 1.5
 const STALE_MATCH_PLAYER_MS = 20000
@@ -446,11 +447,14 @@ function syncLocalReadyPlayerForScheduledMatch(): void {
 }
 
 function getScheduledMatchParticipants(): MatchPlayer[] {
-  return gameState.matchPlayers.filter(player =>
-    player.ready &&
-    (player.phase === 'ready' || player.phase === 'playing') &&
-    isSameScheduledMatch(player.matchStartTime)
-  )
+  return gameState.matchPlayers
+    .filter(player =>
+      player.ready &&
+      (player.phase === 'ready' || player.phase === 'playing') &&
+      isSameScheduledMatch(player.matchStartTime)
+    )
+    .sort((a, b) => a.playerId.localeCompare(b.playerId))
+    .slice(0, MAX_MULTIPLAYER_PLAYERS)
 }
 
 function startNewReadyMinute(): number {
@@ -492,7 +496,7 @@ function tickMultiplayerReadyWindow(): void {
   if (Date.now() >= multiplayerMatchStartTimeMs) {
     const participants = getScheduledMatchParticipants()
     const local = getLocalPlayerIdentity()
-    if (participants.length >= 2 && participants.some(player => player.playerId === local.playerId)) {
+    if (participants.some(player => player.playerId === local.playerId)) {
       startGame('multiplayer')
     } else {
       startNewReadyMinute()
@@ -731,7 +735,11 @@ function assignMatchSlots(): void {
 }
 
 function sortMatchPlayers(): void {
-  if (!matchSlotsLocked) assignMatchSlots()
+  // Active roster messages can arrive just after the countdown. Recompute from the
+  // deterministic roster so late packets still produce 20 unique, shared slots.
+  if (!matchSlotsLocked || (gameState.playMode === 'multiplayer' && gameState.phase === 'playing')) {
+    assignMatchSlots()
+  }
   gameState.matchPlayers.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
     return b.maxCombo - a.maxCombo
