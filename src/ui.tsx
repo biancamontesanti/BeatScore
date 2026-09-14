@@ -503,8 +503,9 @@ function KeynoteBar(): ReactEcs.JSX.Element {
 // ──────────────────────────────────────────────────────────
 function RhythmTimeline(): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const p = gameState.measureProgress
+  const p = gameState.spacePressed ? gameState.hitMarkerProgress : gameState.measureProgress
   const spaceWindow = getSpaceWindow()
+  const markerVisible = !gameState.spacePressed || gameState.spaceFlash > 0.25
 
   // How close is the ball to the judgment center? (0 = far, 1 = perfect)
   const distFromCenter  = Math.abs(p - JUDGMENT_CENTER)
@@ -515,6 +516,8 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   const ballColor = inZone
     ? Color4.create(1.0, 0.7 + jPulse * 0.3, 0.1 + jPulse * 0.1, 1)
     : Color4.create(0.4, 0.7, 1.0, 1)
+  const markerAlpha = gameState.spacePressed ? Math.max(0, (gameState.spaceFlash - 0.25) / 0.75) : 1
+  const markerColor = Color4.create(ballColor.r, ballColor.g, ballColor.b, markerAlpha)
 
   const visualZoneWidth = Math.max(spaceWindow.end - spaceWindow.start, 0.14)
   const visualZoneStart = Math.max(0, Math.min(1 - visualZoneWidth, JUDGMENT_CENTER - visualZoneWidth / 2))
@@ -585,17 +588,19 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
           uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
         />
 
-        {/* Moving ball */}
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { top: mobile ? 5 : 6, left: ballLeftPct },
-            width: mobile ? 28 : 30,
-            height: mobile ? 28 : 30,
-            borderRadius: 15,
-          }}
-          uiBackground={{ color: ballColor }}
-        />
+        {/* Freeze briefly at the pressed position, then disappear. */}
+        {markerVisible ? (
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: mobile ? 5 : 6, left: ballLeftPct },
+              width: mobile ? 28 : 30,
+              height: mobile ? 28 : 30,
+              borderRadius: 15,
+            }}
+            uiBackground={{ color: markerColor }}
+          />
+        ) : null}
       </UiEntity>
     </UiEntity>
   )

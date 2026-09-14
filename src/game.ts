@@ -121,6 +121,7 @@ export interface GameState {
 
   // Space hit
   spacePressed: boolean       // has Space been pressed this measure?
+  hitMarkerProgress: number   // marker position captured when HIT is pressed
 
   // Visuals
   judgment: Judgment | null
@@ -218,6 +219,7 @@ export const gameState: GameState = {
   inputIndex: 0,
   sequenceFailed: false,
   spacePressed: false,
+  hitMarkerProgress: 0,
   judgment: null,
   keyFlash: { left: 0, down: 0, up: 0, right: 0, upLeft: 0, upRight: 0 },
   spaceFlash: 0,
@@ -1689,6 +1691,7 @@ function startComboWait(duration = getComboWaitDuration(gameState.measureCount))
   gameState.inputIndex     = 0
   gameState.sequenceFailed = false
   gameState.spacePressed   = false
+  gameState.hitMarkerProgress = 0
   gameState.currentSequence = []
 }
 
@@ -1704,6 +1707,7 @@ function newMeasure(): void {
   gameState.inputIndex      = 0
   gameState.sequenceFailed  = false
   gameState.spacePressed    = false
+  gameState.hitMarkerProgress = 0
   gameState.currentSequence = generateSeq(mode, gameState.measureCount)
 }
 
@@ -1726,6 +1730,7 @@ function syncMultiplayerTimeline(): boolean {
     gameState.inputIndex = 0
     gameState.sequenceFailed = false
     gameState.spacePressed = false
+    gameState.hitMarkerProgress = 0
     gameState.spaceFlash = 0
     gameState.currentSequence = frame.roundState === 'active'
       ? generateSeq(frame.roundMode, frame.measureCount)
@@ -1793,6 +1798,7 @@ function startGame(mode: Exclude<PlayMode, 'none'>): void {
   gameState.judgment     = null
   gameState.keyFlash     = { left: 0, down: 0, up: 0, right: 0, upLeft: 0, upRight: 0 }
   gameState.spaceFlash   = 0
+  gameState.hitMarkerProgress = 0
   gameState.winnerPlayerId = ''
   gameState.winnerCelebrationTimer = 0
   winnerCelebrationStarted = false
@@ -1997,6 +2003,7 @@ function handleSpace(): void {
   if (gameState.measureProgress < spaceWindow.start || gameState.measureProgress > spaceWindow.end) return
 
   gameState.spacePressed = true
+  gameState.hitMarkerProgress = gameState.measureProgress
   gameState.spaceFlash   = 1.0
 
   // Sequence must be fully and correctly typed
