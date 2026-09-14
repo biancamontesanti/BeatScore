@@ -193,7 +193,7 @@ function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: C
       }}
       uiBackground={{ color: Color4.create(color.r * 0.13, color.g * 0.13, color.b * 0.13, 0.96) }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 56 : 50)} color={Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 62 : 58)} color={Color4.White()}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
     </UiEntity>
   )
@@ -439,7 +439,7 @@ function ArrowBox({
       <Label
         value={sym}
         font="monospace"
-        fontSize={horizontalTriangle ? (mobile ? 44 : 56) : (mobile ? 34 : 38)}
+        fontSize={horizontalTriangle ? (mobile ? 50 : 60) : (mobile ? 34 : 38)}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -583,19 +583,6 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             overflow: 'hidden',
           }}
           uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
-        />
-
-        {/* Judgment center marker (thin bright line) */}
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { top: 0, left: `${(JUDGMENT_CENTER * 100 - 0.2).toFixed(1)}%` as PercentUnit },
-            width: 3,
-            height: '100%',
-          }}
-          uiBackground={{
-            color: Color4.create(1, 0.9, 0.3, 0.35 + jPulse * 0.65),
-          }}
         />
 
         {/* Moving ball */}
