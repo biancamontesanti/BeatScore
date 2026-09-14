@@ -248,6 +248,7 @@ let cinematicTime = 0
 let hitCinematicTimer = 0
 let hitSoundEntity = engine.RootEntity
 let arrowClapSoundEntity = engine.RootEntity
+let arrowFailSoundEntity = engine.RootEntity
 let matchMusicEntity = engine.RootEntity
 let cinematicTargetEntity = engine.RootEntity
 let cinematicCameraEntity = engine.RootEntity
@@ -547,6 +548,7 @@ const WINNER_EMOTE = 'disco'
 const LOSER_EMOTE = 'dontsee'
 const HIT_SOUND_URL = 'public/sounds/clap.mp3'
 const ARROW_CLAP_SOUND_URL = 'public/sounds/clap-arrow.mp3'
+const ARROW_FAIL_SOUND_URL = 'public/sounds/fail-arrow.mp3'
 const MATCH_MUSIC_URL = 'public/sounds/beatdropmusic.mp3'
 const MATCH_MUSIC_DURATION = 158.832
 const POST_GAME_RESULT_DURATION = 6.0
@@ -668,6 +670,11 @@ function playArrowClapSound(): void {
     position: Vector3.create(slot.x, 1.2, slot.z),
   })
   AudioSource.playSound(arrowClapSoundEntity, ARROW_CLAP_SOUND_URL, true)
+}
+
+function playArrowFailSound(): void {
+  if (arrowFailSoundEntity === engine.RootEntity) return
+  AudioSource.playSound(arrowFailSoundEntity, ARROW_FAIL_SOUND_URL, true)
 }
 
 function playMatchMusic(): void {
@@ -1383,6 +1390,15 @@ function initCinematicCamera(): void {
     global: true,
   })
 
+  arrowFailSoundEntity = engine.addEntity()
+  AudioSource.create(arrowFailSoundEntity, {
+    audioClipUrl: ARROW_FAIL_SOUND_URL,
+    playing: false,
+    volume: 0.9,
+    loop: false,
+    global: true,
+  })
+
   matchMusicEntity = engine.addEntity()
   Transform.create(matchMusicEntity, {
     position: Vector3.create(16, 2.2, 16),
@@ -1959,6 +1975,7 @@ function handleArrow(dir: Direction): void {
     playArrowClapSound()
     gameState.inputIndex++
   } else {
+    playArrowFailSound()
     gameState.inputIndex = 0
   }
 }
