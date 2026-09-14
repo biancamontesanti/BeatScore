@@ -8,10 +8,7 @@ import {
   gameState,
   getSpaceWindow,
   getRoundModeLabel,
-  COOL_WINDOW,
-  GREAT_WINDOW,
   JUDGMENT_CENTER,
-  PERFECT_WINDOW,
   openPlayMenu,
   readyForMultiplayer,
   returnToLobby,
@@ -196,7 +193,7 @@ function KeyboardKey({ symbol, color, wide = false }: { symbol: string; color: C
       }}
       uiBackground={{ color: Color4.create(color.r * 0.13, color.g * 0.13, color.b * 0.13, 0.96) }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 48 : 42)} color={Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : verticalTriangle ? (mobile ? 43 : 36) : (mobile ? 56 : 50)} color={Color4.White()}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
     </UiEntity>
   )
@@ -273,7 +270,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
   const descriptions = [
     'Follow the arrows from left to right.',
     mobile ? 'Tap the matching direction buttons.' : 'Press the matching arrow keys in order.',
-    mobile ? 'Tap JUMP when the marker reaches gold.' : 'Press SPACE when the marker reaches gold.',
+    mobile ? 'Tap JUMP when the marker reaches the cyan center.' : 'Press SPACE when the marker reaches the cyan center.',
   ]
 
   const nextTutorialPage = (): void => {
@@ -442,7 +439,7 @@ function ArrowBox({
       <Label
         value={sym}
         font="monospace"
-        fontSize={horizontalTriangle ? (mobile ? 38 : 50) : (mobile ? 34 : 38)}
+        fontSize={horizontalTriangle ? (mobile ? 44 : 56) : (mobile ? 34 : 38)}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -523,16 +520,6 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   const visualZoneStart = Math.max(0, Math.min(1 - visualZoneWidth, JUDGMENT_CENTER - visualZoneWidth / 2))
   const jZoneLeft = `${(visualZoneStart * 100).toFixed(2)}%` as PercentUnit
   const jZoneWidth = `${(visualZoneWidth * 100).toFixed(2)}%` as PercentUnit
-  const zoneHalfProgress = visualZoneWidth / 2
-  const scoreBand = (seconds: number): number => Math.min(100, (seconds / gameState.roundDuration / zoneHalfProgress) * 100)
-  const perfectWidth = scoreBand(PERFECT_WINDOW)
-  const greatWidth = scoreBand(GREAT_WINDOW)
-  const coolWidth = scoreBand(COOL_WINDOW)
-  const scoreBoundaries = [perfectWidth, greatWidth, coolWidth].flatMap(width => [
-    (100 - width) / 2,
-    (100 + width) / 2,
-  ])
-
   const ballLeftPct = `${(p * 100).toFixed(2)}%` as PercentUnit
 
   // Space key: "hit" if space already pressed this measure
@@ -586,7 +573,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
         uiTransform={{ width: '100%', height: mobile ? 38 : 42, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
-        {/* Continuous score gradient with exact threshold markers for the current round speed. */}
+        {/* Continuous score gradient from BAD at the edges to PERFECT at center. */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -596,15 +583,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             overflow: 'hidden',
           }}
           uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
-        >
-          {scoreBoundaries.map((boundary, index) => (
-            <UiEntity
-              key={`score-boundary-${index}`}
-              uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${boundary}%` as PercentUnit }, width: 2, height: '100%' }}
-              uiBackground={{ color: Color4.create(1, 1, 1, 0.62) }}
-            />
-          ))}
-        </UiEntity>
+        />
 
         {/* Judgment center marker (thin bright line) */}
         <UiEntity
