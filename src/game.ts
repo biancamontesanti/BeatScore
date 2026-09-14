@@ -674,6 +674,11 @@ function playArrowClapSound(): void {
 
 function playArrowFailSound(): void {
   if (arrowFailSoundEntity === engine.RootEntity) return
+
+  const slot = getLocalDanceSlotPosition()
+  Transform.createOrReplace(arrowFailSoundEntity, {
+    position: Vector3.create(slot.x, 1.2, slot.z),
+  })
   AudioSource.playSound(arrowFailSoundEntity, ARROW_FAIL_SOUND_URL, true)
 }
 
@@ -1391,6 +1396,9 @@ function initCinematicCamera(): void {
   })
 
   arrowFailSoundEntity = engine.addEntity()
+  Transform.create(arrowFailSoundEntity, {
+    position: Vector3.create(16, 1.2, 16),
+  })
   AudioSource.create(arrowFailSoundEntity, {
     audioClipUrl: ARROW_FAIL_SOUND_URL,
     playing: false,

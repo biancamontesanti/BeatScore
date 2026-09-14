@@ -52,12 +52,6 @@ type PercentUnit = `${number}%`
 
 const BEAT_SCORE_LOGO = 'assets/images/beatscore.png'
 const JUDGMENT_GRADIENT = 'assets/images/ui/judgment-gradient.png'
-const JUDGMENT_BAND_TEXTURE = {
-  bad: 'assets/images/ui/judgment-bad.png',
-  cool: 'assets/images/ui/judgment-cool.png',
-  great: 'assets/images/ui/judgment-great.png',
-  perfect: 'assets/images/ui/judgment-perfect.png',
-}
 const BUTTON_SOUND = 'public/sounds/decentraland-button.mp3'
 let buttonSoundEntity = engine.RootEntity
 let tutorialPage = 0
@@ -406,6 +400,7 @@ function ArrowBox({
   const mobile = isMobile()
   const c = inverted ? REVERSE_COLOR : DIR_COLOR[displayDirection]
   const sym = state === 'done' && inverted ? DIR_SYMBOL[inputDirection] : DIR_SYMBOL[displayDirection]
+  const horizontalTriangle = displayDirection === 'left' || displayDirection === 'right'
 
   let bg: Color4
   let fg: Color4
@@ -447,7 +442,7 @@ function ArrowBox({
       <Label
         value={sym}
         font="monospace"
-        fontSize={mobile ? 34 : 38}
+        fontSize={horizontalTriangle ? (mobile ? 38 : 50) : (mobile ? 34 : 38)}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -533,6 +528,10 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   const perfectWidth = scoreBand(PERFECT_WINDOW)
   const greatWidth = scoreBand(GREAT_WINDOW)
   const coolWidth = scoreBand(COOL_WINDOW)
+  const scoreBoundaries = [perfectWidth, greatWidth, coolWidth].flatMap(width => [
+    (100 - width) / 2,
+    (100 + width) / 2,
+  ])
 
   const ballLeftPct = `${(p * 100).toFixed(2)}%` as PercentUnit
 
@@ -587,7 +586,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
         uiTransform={{ width: '100%', height: mobile ? 38 : 42, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
-        {/* Exact horizontal score thresholds with vertical shading inside each result band. */}
+        {/* Continuous score gradient with exact threshold markers for the current round speed. */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -596,20 +595,15 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             height: '100%',
             overflow: 'hidden',
           }}
-          uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.bad }, textureMode: 'stretch' }}
+          uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
         >
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - coolWidth) / 2}%` as PercentUnit }, width: `${coolWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.cool }, textureMode: 'stretch' }}
-          />
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - greatWidth) / 2}%` as PercentUnit }, width: `${greatWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.great }, textureMode: 'stretch' }}
-          />
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - perfectWidth) / 2}%` as PercentUnit }, width: `${perfectWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.perfect }, textureMode: 'stretch' }}
-          />
+          {scoreBoundaries.map((boundary, index) => (
+            <UiEntity
+              key={`score-boundary-${index}`}
+              uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${boundary}%` as PercentUnit }, width: 2, height: '100%' }}
+              uiBackground={{ color: Color4.create(1, 1, 1, 0.62) }}
+            />
+          ))}
         </UiEntity>
 
         {/* Judgment center marker (thin bright line) */}
