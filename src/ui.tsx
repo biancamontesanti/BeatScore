@@ -48,6 +48,7 @@ const DIR_KEY: Record<Direction, string> = {
 type PercentUnit = `${number}%`
 
 const BEAT_SCORE_LOGO = 'assets/images/beatscore.png'
+const JUDGMENT_GRADIENT = 'assets/images/ui/judgment-gradient.png'
 const BUTTON_SOUND = 'public/sounds/decentraland-button.mp3'
 let buttonSoundEntity = engine.RootEntity
 let tutorialPage = 0
@@ -252,7 +253,7 @@ function TimingVisual(): ReactEcs.JSX.Element {
         uiBackground={{ color: Color4.create(0.03, 0.04, 0.12, 0.96) }}
       >
         <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: '72%' }, width: '20%', height: '100%' }}
-          uiBackground={{ color: Color4.create(1, 0.68, 0.10, 0.68) }} />
+          uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }} />
         <UiEntity uiTransform={{ positionType: 'absolute', position: { top: mobile ? 4 : 5, left: '78%' }, width: mobile ? 22 : 28, height: mobile ? 22 : 28, borderRadius: 14 }}
           uiBackground={{ color: Color4.create(1, 0.94, 0.34, 1) }} />
       </UiEntity>
@@ -509,14 +510,12 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
   const distFromCenter  = Math.abs(p - JUDGMENT_CENTER)
   const jPulse          = Math.max(0, 1 - distFromCenter / 0.18)  // 1 at center, 0 outside ±0.18
 
-  // Ball colour: cool blue when far, warm gold when in zone
+  // The marker turns gold inside the score zone while the zone itself previews judgment quality.
   const inZone = p >= spaceWindow.start && p <= spaceWindow.end
   const ballColor = inZone
     ? Color4.create(1.0, 0.7 + jPulse * 0.3, 0.1 + jPulse * 0.1, 1)
     : Color4.create(0.4, 0.7, 1.0, 1)
 
-  // Judgment zone background glow
-  const jZoneColor = Color4.create(1.0, 0.75, 0.15, 0.12 + jPulse * 0.55)
   const visualZoneWidth = Math.max(spaceWindow.end - spaceWindow.start, 0.14)
   const visualZoneStart = Math.max(0, Math.min(1 - visualZoneWidth, JUDGMENT_CENTER - visualZoneWidth / 2))
   const jZoneLeft = `${(visualZoneStart * 100).toFixed(2)}%` as PercentUnit
@@ -534,9 +533,9 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
       uiTransform={{
         positionType: 'absolute',
         position: mobile
-          ? { top: 174, left: '4%' }
-          : { top: 204, left: 290, right: 245 },
-        width: mobile ? '92%' : undefined,
+          ? { top: 174, left: '13%' }
+          : { top: 204, left: 350, right: 305 },
+        width: mobile ? '74%' : undefined,
         minWidth: mobile ? undefined : 420,
         height: mobile ? 78 : 82,
         flexDirection: 'column',
@@ -583,7 +582,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             width: jZoneWidth,
             height: '100%',
           }}
-          uiBackground={{ color: jZoneColor }}
+          uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }}
         />
 
         {/* Judgment center marker (thin bright line) */}

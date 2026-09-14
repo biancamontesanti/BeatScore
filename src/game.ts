@@ -278,8 +278,9 @@ const DANCE_FLOOR_MIN_X = 7.4
 const DANCE_FLOOR_MAX_X = 24.6
 const DANCE_FLOOR_MIN_Z = 7.4
 const DANCE_FLOOR_MAX_Z = 24.6
-const WAIT_MIN = 3.0
-const WAIT_MAX = 4.0
+// Keep the song length stable while moving 2.5 seconds from downtime into each playable sequence.
+const WAIT_MIN = 0.5
+const WAIT_MAX = 1.5
 const MULTIPLAYER_READY_WINDOW = 60.0
 const MULTIPLAYER_READY_WINDOW_MS = MULTIPLAYER_READY_WINDOW * 1000
 const MULTIPLAYER_SCORE_CHANNEL = 'rhythm-hit-score-v2'
@@ -498,10 +499,10 @@ function tickMultiplayerReadyWindow(): void {
 }
 
 const ROUND_DURATIONS: Record<RoundMode, number> = {
-  easy: MEASURE_DURATION,
-  middle: 2.8,
-  freestyle: 3.35,
-  hard: 4.0,
+  easy: MEASURE_DURATION + 2.5,
+  middle: 5.3,
+  freestyle: 5.85,
+  hard: 6.5,
 }
 
 const MODE_SCORE_MULTIPLIER: Record<RoundMode, number> = {
