@@ -52,6 +52,12 @@ type PercentUnit = `${number}%`
 
 const BEAT_SCORE_LOGO = 'assets/images/beatscore.png'
 const JUDGMENT_GRADIENT = 'assets/images/ui/judgment-gradient.png'
+const JUDGMENT_BAND_TEXTURE = {
+  bad: 'assets/images/ui/judgment-bad.png',
+  cool: 'assets/images/ui/judgment-cool.png',
+  great: 'assets/images/ui/judgment-great.png',
+  perfect: 'assets/images/ui/judgment-perfect.png',
+}
 const BUTTON_SOUND = 'public/sounds/decentraland-button.mp3'
 let buttonSoundEntity = engine.RootEntity
 let tutorialPage = 0
@@ -400,7 +406,6 @@ function ArrowBox({
   const mobile = isMobile()
   const c = inverted ? REVERSE_COLOR : DIR_COLOR[displayDirection]
   const sym = state === 'done' && inverted ? DIR_SYMBOL[inputDirection] : DIR_SYMBOL[displayDirection]
-  const verticalTriangle = displayDirection === 'up' || displayDirection === 'down'
 
   let bg: Color4
   let fg: Color4
@@ -441,8 +446,8 @@ function ArrowBox({
     >
       <Label
         value={sym}
-        font={displayDirection === 'left' || displayDirection === 'right' ? 'monospace' : 'sans-serif'}
-        fontSize={verticalTriangle ? (mobile ? 32 : 29) : (mobile ? 38 : 42)}
+        font="monospace"
+        fontSize={mobile ? 34 : 38}
         color={fg}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
         textAlign="middle-center"
@@ -582,7 +587,7 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
         uiTransform={{ width: '100%', height: mobile ? 38 : 42, positionType: 'relative', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.38, 0.56, 0.94, 0.66) }}
         uiBackground={{ color: Color4.create(0.04, 0.04, 0.10, 0.92) }}
       >
-        {/* Exact score bands: the color under the marker matches the awarded judgment. */}
+        {/* Exact horizontal score thresholds with vertical shading inside each result band. */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -591,19 +596,19 @@ function RhythmTimeline(): ReactEcs.JSX.Element {
             height: '100%',
             overflow: 'hidden',
           }}
-          uiBackground={{ color: Color4.create(1.0, 0.55, 0.15, 0.88) }}
+          uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.bad }, textureMode: 'stretch' }}
         >
           <UiEntity
             uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - coolWidth) / 2}%` as PercentUnit }, width: `${coolWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ color: Color4.create(0.75, 0.35, 1.0, 0.94) }}
+            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.cool }, textureMode: 'stretch' }}
           />
           <UiEntity
             uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - greatWidth) / 2}%` as PercentUnit }, width: `${greatWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ color: Color4.create(0.4, 1.0, 0.55, 0.96) }}
+            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.great }, textureMode: 'stretch' }}
           />
           <UiEntity
             uiTransform={{ positionType: 'absolute', position: { top: 0, left: `${(100 - perfectWidth) / 2}%` as PercentUnit }, width: `${perfectWidth}%` as PercentUnit, height: '100%' }}
-            uiBackground={{ color: Color4.create(0.25, 0.85, 1.0, 1) }}
+            uiBackground={{ texture: { src: JUDGMENT_BAND_TEXTURE.perfect }, textureMode: 'stretch' }}
           />
         </UiEntity>
 

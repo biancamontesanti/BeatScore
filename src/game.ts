@@ -1394,7 +1394,7 @@ function initCinematicCamera(): void {
   AudioSource.create(arrowFailSoundEntity, {
     audioClipUrl: ARROW_FAIL_SOUND_URL,
     playing: false,
-    volume: 0.9,
+    volume: 1.0,
     loop: false,
     global: true,
   })
