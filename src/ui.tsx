@@ -209,7 +209,7 @@ function KeyboardKey({
       }}
       uiBackground={{ color: background }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 44 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 40 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{
           positionType: mobile && !wide ? 'relative' : undefined,
           position: mobile && !wide ? { top: horizontalTriangle ? -14 : -4, left: horizontalTriangle ? -2 : 0 } : undefined,
@@ -313,8 +313,8 @@ function TimingVisual(): ReactEcs.JSX.Element {
           <Label value="TAP" fontSize={20} color={Color4.create(0.74, 0.84, 0.96, 1)}
             uiTransform={{ width: 52, height: 36 }} textAlign="middle-right" />
           <TutorialHitButton pressed={hitPressed} />
-          <Label value={'AT CYAN CENTER\nFOR A PERFECT SCORE'} fontSize={18} color={Color4.create(0.74, 0.84, 0.96, 1)}
-            uiTransform={{ width: 210, height: 56 }} textAlign="middle-left" />
+          <Label value={'WHEN THE CIRCLE ARRIVES AT\nTHE CYAN CENTER FOR A PERFECT SCORE'} fontSize={16} color={Color4.create(0.74, 0.84, 0.96, 1)}
+            uiTransform={{ width: 280, height: 56 }} textAlign="middle-left" />
         </UiEntity>
       ) : (
         <UiEntity uiTransform={{ width: '100%', height: 72, alignItems: 'center', justifyContent: 'center', margin: { top: 12 } }}>
@@ -546,7 +546,7 @@ function ArrowBox({
       <Label
         value={sym}
         font="monospace"
-        fontSize={horizontalTriangle ? (mobile ? 42 : 60) : (mobile ? 38 : 38)}
+        fontSize={horizontalTriangle ? (mobile ? 38 : 60) : 38}
         color={fg}
         uiTransform={{
           positionType: mobile ? 'relative' : undefined,
@@ -1501,7 +1501,7 @@ function LobbyChoiceScreen(): ReactEcs.JSX.Element {
       >
         <CloseButton onClick={watchLiveMode} />
         <BeatScoreLogo />
-        <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 30 : 22}
+        <Label value={`${gameState.danceRank}  •  ${gameState.rankPoints} RP`} fontSize={mobile ? 24 : 22}
           color={Color4.create(0.46, 0.92, 1.0, 1)}
           uiTransform={{ width: '100%', height: mobile ? 26 : 32, margin: { bottom: mobile ? 8 : 12 } }} textAlign="middle-center" />
 
