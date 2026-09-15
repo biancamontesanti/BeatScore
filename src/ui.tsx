@@ -209,10 +209,10 @@ function KeyboardKey({
       }}
       uiBackground={{ color: background }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 48 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 44 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{
           positionType: mobile && !wide ? 'relative' : undefined,
-          position: mobile && !wide ? { top: -4, left: horizontalTriangle ? -3 : 0 } : undefined,
+          position: mobile && !wide ? { top: horizontalTriangle ? -14 : -4, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
@@ -296,9 +296,9 @@ function TimingVisual(): ReactEcs.JSX.Element {
   const markerLeft = 5 + (74 * travelProgress)
 
   return (
-    <UiEntity uiTransform={{ width: mobile ? '72%' : 400, height: mobile ? 100 : 126, flexDirection: 'column', alignItems: 'center' }}>
+    <UiEntity uiTransform={{ width: mobile ? '100%' : 400, height: mobile ? 150 : 126, flexDirection: 'column', alignItems: 'center' }}>
       <UiEntity
-        uiTransform={{ width: '100%', height: mobile ? 30 : 38, positionType: 'relative', borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.46, 0.66, 1, 0.75) }}
+        uiTransform={{ width: mobile ? '72%' : '100%', height: mobile ? 30 : 38, positionType: 'relative', borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: Color4.create(0.46, 0.66, 1, 0.75) }}
         uiBackground={{ color: Color4.create(0.03, 0.04, 0.12, 0.96) }}
       >
         <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: '72%' }, width: '20%', height: '100%' }}
@@ -308,11 +308,19 @@ function TimingVisual(): ReactEcs.JSX.Element {
             uiBackground={{ color: hitPressed ? Color4.create(0.15, 0.92, 1, 1) : Color4.create(0.34, 0.68, 1, 1) }} />
         ) : null}
       </UiEntity>
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 56 : 72, alignItems: 'center', justifyContent: mobile ? 'flex-end' : 'center', padding: { right: mobile ? 52 : 0 }, margin: { top: mobile ? 8 : 12 } }}>
-        {mobile ? <TutorialHitButton pressed={hitPressed} /> : (
+      {mobile ? (
+        <UiEntity uiTransform={{ width: '82%', height: 104, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', margin: { top: 4 } }}>
+          <Label value="TAP" fontSize={20} color={Color4.create(0.74, 0.84, 0.96, 1)}
+            uiTransform={{ width: 52, height: 36 }} textAlign="middle-right" />
+          <TutorialHitButton pressed={hitPressed} />
+          <Label value={'AT CYAN CENTER\nFOR A PERFECT SCORE'} fontSize={18} color={Color4.create(0.74, 0.84, 0.96, 1)}
+            uiTransform={{ width: 210, height: 56 }} textAlign="middle-left" />
+        </UiEntity>
+      ) : (
+        <UiEntity uiTransform={{ width: '100%', height: 72, alignItems: 'center', justifyContent: 'center', margin: { top: 12 } }}>
           <KeyboardKey symbol={hitPressed ? 'PERFECT' : 'SPACE / HIT'} color={Color4.create(1, 0.48, 0.84, 1)} wide completed={hitPressed} />
-        )}
-      </UiEntity>
+        </UiEntity>
+      )}
     </UiEntity>
   )
 }
@@ -364,11 +372,12 @@ function TutorialHitButton({ pressed }: { pressed: boolean }): ReactEcs.JSX.Elem
 
 function TutorialSlide(): ReactEcs.JSX.Element {
   const mobile = isMobile()
+  const mobileTimingStep = mobile && tutorialPage === 2
   const titles = ['READ THE SEQUENCE', 'ENTER THE MOVES', 'HIT THE BEAT']
   const descriptions = [
     'Follow the arrows from left to right.',
     mobile ? 'Tap the matching direction buttons.' : 'Press the matching arrow keys in order.',
-    mobile ? 'Tap JUMP at the cyan center to get a PERFECT score.' : 'Press SPACE at the cyan center to get a PERFECT score.',
+    mobile ? '' : 'Press SPACE at the cyan center to get a PERFECT score.',
   ]
 
   const nextTutorialPage = (): void => {
@@ -388,9 +397,9 @@ function TutorialSlide(): ReactEcs.JSX.Element {
       <Label value={titles[tutorialPage]} fontSize={mobile ? 36 : 34} color={Color4.White()}
         uiTransform={{ width: '100%', height: mobile ? 46 : 46, margin: { bottom: mobile ? 2 : 7 } }} textAlign="middle-center" />
       <Label value={descriptions[tutorialPage]} fontSize={mobile ? 23 : 20} color={Color4.create(0.74, 0.84, 0.96, 1)}
-        uiTransform={{ width: '94%', height: mobile ? 36 : 34, margin: { bottom: mobile ? 4 : 14 } }} textAlign="middle-center" />
+        uiTransform={{ width: '94%', height: mobileTimingStep ? 0 : mobile ? 36 : 34, margin: { bottom: mobileTimingStep ? 0 : mobile ? 4 : 14 } }} textAlign="middle-center" />
 
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 112 : 146, alignItems: 'center', justifyContent: 'center' }}>
+      <UiEntity uiTransform={{ width: '100%', height: mobileTimingStep ? 150 : mobile ? 112 : 146, alignItems: 'center', justifyContent: 'center' }}>
         {tutorialPage === 0 ? <SequenceVisual /> : null}
         {tutorialPage === 1 ? <SequenceCompletionVisual /> : null}
         {tutorialPage === 2 ? <TimingVisual /> : null}
@@ -541,7 +550,7 @@ function ArrowBox({
         color={fg}
         uiTransform={{
           positionType: mobile ? 'relative' : undefined,
-          position: mobile ? { top: -3, left: horizontalTriangle ? -2 : 0 } : undefined,
+          position: mobile ? { top: horizontalTriangle ? -10 : -3, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
