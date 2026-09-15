@@ -318,7 +318,7 @@ function TimingVisual(): ReactEcs.JSX.Element {
         </UiEntity>
       ) : (
         <UiEntity uiTransform={{ width: '100%', height: 72, alignItems: 'center', justifyContent: 'center', margin: { top: 12 } }}>
-          <KeyboardKey symbol={hitPressed ? 'PERFECT' : 'SPACE / HIT'} color={Color4.create(1, 0.48, 0.84, 1)} wide completed={hitPressed} />
+          <KeyboardKey symbol="SPACE" color={Color4.create(1, 0.48, 0.84, 1)} wide completed={hitPressed} />
         </UiEntity>
       )}
     </UiEntity>
@@ -377,7 +377,7 @@ function TutorialSlide(): ReactEcs.JSX.Element {
   const descriptions = [
     'Follow the arrows from left to right.',
     mobile ? 'Tap the matching direction buttons.' : 'Press the matching arrow keys in order.',
-    mobile ? '' : 'Press SPACE at the cyan center to get a PERFECT score.',
+    mobile ? '' : 'Hit SPACE',
   ]
 
   const nextTutorialPage = (): void => {
@@ -1162,7 +1162,7 @@ function DailyGoalsPanel(): ReactEcs.JSX.Element {
     >
       <Label
         value="DAILY GOALS"
-        fontSize={12}
+        fontSize={15}
         color={Color4.create(0.72, 0.88, 1, 1)}
         uiTransform={{ width: '100%', height: 18, margin: { bottom: 4 } }}
         textAlign="middle-left"
@@ -1180,14 +1180,14 @@ function DailyGoalsPanel(): ReactEcs.JSX.Element {
           >
             <Label
               value={goal.completed ? `${goal.label} DONE` : goal.label}
-              fontSize={11}
+              fontSize={14}
               color={goal.completed ? Color4.create(0.42, 1, 0.58, 1) : Color4.create(0.82, 0.82, 0.9, 1)}
               uiTransform={{ width: 135, height: 24 }}
               textAlign="middle-left"
             />
             <Label
               value={goal.completed ? `+${goal.rewardRp} RP` : progress}
-              fontSize={11}
+              fontSize={14}
               color={Color4.create(1, 0.82, 0.22, 1)}
               uiTransform={{ width: 55, height: 24 }}
               textAlign="middle-right"
