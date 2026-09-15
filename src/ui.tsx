@@ -280,6 +280,14 @@ function SequenceCompletionVisual(): ReactEcs.JSX.Element {
 
 function TimingVisual(): ReactEcs.JSX.Element {
   const mobile = isMobile()
+  const cycle = Date.now() % 3400
+  const travelDuration = 2300
+  const feedbackDuration = 520
+  const hitPressed = cycle >= travelDuration && cycle < travelDuration + feedbackDuration
+  const markerVisible = cycle < travelDuration + feedbackDuration
+  const travelProgress = Math.min(1, cycle / travelDuration)
+  const markerLeft = 5 + (74 * travelProgress)
+
   return (
     <UiEntity uiTransform={{ width: mobile ? '88%' : 400, height: mobile ? 100 : 126, flexDirection: 'column', alignItems: 'center' }}>
       <UiEntity
@@ -288,11 +296,13 @@ function TimingVisual(): ReactEcs.JSX.Element {
       >
         <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: '72%' }, width: '20%', height: '100%' }}
           uiBackground={{ texture: { src: JUDGMENT_GRADIENT }, textureMode: 'stretch' }} />
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { top: mobile ? 4 : 5, left: '78%' }, width: mobile ? 22 : 28, height: mobile ? 22 : 28, borderRadius: 14 }}
-          uiBackground={{ color: Color4.create(1, 0.94, 0.34, 1) }} />
+        {markerVisible ? (
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { top: mobile ? 4 : 5, left: `${markerLeft}%` }, width: mobile ? 22 : 28, height: mobile ? 22 : 28, borderRadius: 14 }}
+            uiBackground={{ color: hitPressed ? Color4.create(0.15, 0.92, 1, 1) : Color4.create(0.34, 0.68, 1, 1) }} />
+        ) : null}
       </UiEntity>
       <UiEntity uiTransform={{ width: '100%', height: mobile ? 56 : 72, alignItems: 'center', justifyContent: 'center', margin: { top: mobile ? 8 : 12 } }}>
-        <KeyboardKey symbol={mobile ? 'JUMP / HIT' : 'SPACE / HIT'} color={Color4.create(1, 0.48, 0.84, 1)} wide />
+        <KeyboardKey symbol={hitPressed ? 'PERFECT' : (mobile ? 'JUMP / HIT' : 'SPACE / HIT')} color={Color4.create(1, 0.48, 0.84, 1)} wide completed={hitPressed} />
       </UiEntity>
     </UiEntity>
   )
