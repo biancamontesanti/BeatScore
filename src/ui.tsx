@@ -209,10 +209,10 @@ function KeyboardKey({
       }}
       uiBackground={{ color: background }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 40 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 39 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{
           positionType: mobile && !wide ? 'relative' : undefined,
-          position: mobile && !wide ? { top: horizontalTriangle ? -14 : -4, left: horizontalTriangle ? -2 : 0 } : undefined,
+          position: mobile && !wide ? { top: horizontalTriangle ? -11 : -4, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
@@ -546,11 +546,11 @@ function ArrowBox({
       <Label
         value={sym}
         font="monospace"
-        fontSize={horizontalTriangle ? (mobile ? 38 : 60) : 38}
+        fontSize={horizontalTriangle ? (mobile ? 37 : 60) : 38}
         color={fg}
         uiTransform={{
           positionType: mobile ? 'relative' : undefined,
-          position: mobile ? { top: horizontalTriangle ? -10 : -3, left: horizontalTriangle ? -2 : 0 } : undefined,
+          position: mobile ? { top: horizontalTriangle ? -8 : -3, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
