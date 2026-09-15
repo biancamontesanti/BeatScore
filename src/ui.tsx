@@ -210,7 +210,14 @@ function KeyboardKey({
       uiBackground={{ color: background }}
     >
       <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 48 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
-        uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
+        uiTransform={{
+          positionType: mobile && !wide ? 'relative' : undefined,
+          position: mobile && !wide ? { top: -4, left: horizontalTriangle ? -3 : 0 } : undefined,
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }} textAlign="middle-center" />
     </UiEntity>
   )
 }
@@ -301,7 +308,7 @@ function TimingVisual(): ReactEcs.JSX.Element {
             uiBackground={{ color: hitPressed ? Color4.create(0.15, 0.92, 1, 1) : Color4.create(0.34, 0.68, 1, 1) }} />
         ) : null}
       </UiEntity>
-      <UiEntity uiTransform={{ width: '100%', height: mobile ? 56 : 72, alignItems: 'center', justifyContent: 'center', margin: { top: mobile ? 8 : 12 } }}>
+      <UiEntity uiTransform={{ width: '100%', height: mobile ? 56 : 72, alignItems: 'center', justifyContent: mobile ? 'flex-end' : 'center', padding: { right: mobile ? 52 : 0 }, margin: { top: mobile ? 8 : 12 } }}>
         {mobile ? <TutorialHitButton pressed={hitPressed} /> : (
           <KeyboardKey symbol={hitPressed ? 'PERFECT' : 'SPACE / HIT'} color={Color4.create(1, 0.48, 0.84, 1)} wide completed={hitPressed} />
         )}
@@ -313,9 +320,25 @@ function TimingVisual(): ReactEcs.JSX.Element {
 function TutorialHitButton({ pressed }: { pressed: boolean }): ReactEcs.JSX.Element {
   const outerSize = pressed ? 64 : 72
   const innerSize = pressed ? 54 : 62
+  const glowSize = pressed ? 104 : 82
 
   return (
     <UiEntity
+      uiTransform={{ width: 110, height: 80, positionType: 'relative', alignItems: 'center', justifyContent: 'center' }}
+    >
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { left: (110 - glowSize) / 2, top: (80 - glowSize) / 2 },
+          width: glowSize,
+          height: glowSize,
+          borderRadius: Math.floor(glowSize / 2),
+          borderWidth: pressed ? 4 : 2,
+          borderColor: Color4.create(1, 0.78, 0.08, pressed ? 0.72 : 0.18),
+        }}
+        uiBackground={{ color: Color4.create(1, 0.62, 0.02, pressed ? 0.18 : 0.03) }}
+      />
+      <UiEntity
       uiTransform={{
         width: outerSize,
         height: outerSize,
@@ -333,6 +356,7 @@ function TutorialHitButton({ pressed }: { pressed: boolean }): ReactEcs.JSX.Elem
       >
         <Label value="★" fontSize={pressed ? 35 : 40} color={HIT_COLOR}
           uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
+      </UiEntity>
       </UiEntity>
     </UiEntity>
   )
@@ -515,7 +539,14 @@ function ArrowBox({
         font="monospace"
         fontSize={horizontalTriangle ? (mobile ? 42 : 60) : (mobile ? 38 : 38)}
         color={fg}
-        uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
+        uiTransform={{
+          positionType: mobile ? 'relative' : undefined,
+          position: mobile ? { top: -3, left: horizontalTriangle ? -2 : 0 } : undefined,
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
         textAlign="middle-center"
       />
     </UiEntity>
@@ -1162,23 +1193,23 @@ function DailyGoalsPanel(): ReactEcs.JSX.Element {
 function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEcs.JSX.Element {
   const mobile = isMobile()
   const rankPct = `${(gameState.rankProgress * 100).toFixed(1)}%` as PercentUnit
-  const rowHeight = compact ? (mobile ? 32 : 28) : mobile ? 34 : 30
+  const rowHeight = compact ? (mobile ? 28 : 28) : mobile ? 26 : 30
 
   return (
     <UiEntity
       uiTransform={{
         width: compact ? '100%' : mobile ? '90%' : 410,
-        height: compact ? (mobile ? 164 : 144) : mobile ? 172 : 158,
+        height: compact ? (mobile ? 144 : 144) : mobile ? 136 : 158,
         flexDirection: 'column',
         padding: compact
           ? { top: 6, right: 6, bottom: 6, left: 6 }
           : { top: mobile ? 5 : 8, right: 10, bottom: mobile ? 5 : 8, left: 10 },
-        margin: { bottom: compact ? 10 : mobile ? 9 : 14 },
+        margin: { bottom: compact ? (mobile ? 7 : 10) : mobile ? 6 : 14 },
       }}
     >
       <Label
         value={compact ? 'GOALS' : 'DAILY GOALS'}
-        fontSize={compact ? (mobile ? 21 : 18) : mobile ? 24 : 22}
+        fontSize={compact ? (mobile ? 19 : 18) : mobile ? 21 : 22}
         color={Color4.create(0.52, 0.92, 1, 1)}
         uiTransform={{ width: '100%', height: compact ? 22 : mobile ? 26 : 30 }}
         textAlign="middle-left"
@@ -1194,14 +1225,14 @@ function DailyGoalsMenuCard({ compact = false }: { compact?: boolean }): ReactEc
         >
           <Label
             value={goal.completed ? `${goal.label} DONE` : goal.label}
-            fontSize={compact ? (mobile ? 18 : 15) : mobile ? 20 : 17}
+            fontSize={compact ? (mobile ? 16 : 15) : mobile ? 18 : 17}
             color={goal.completed ? Color4.create(0.42, 1, 0.58, 1) : Color4.create(0.82, 0.82, 0.9, 1)}
             uiTransform={{ width: compact ? '64%' : mobile ? '66%' : '70%', height: '100%' }}
             textAlign="middle-left"
           />
           <Label
             value={goal.completed ? `+${goal.rewardRp}` : `${goal.progress}/${goal.target}`}
-            fontSize={compact ? (mobile ? 18 : 15) : mobile ? 20 : 17}
+            fontSize={compact ? (mobile ? 16 : 15) : mobile ? 18 : 17}
             color={Color4.create(1, 0.82, 0.22, 1)}
             uiTransform={{ width: compact ? '34%' : mobile ? '32%' : '28%', height: '100%' }}
             textAlign="middle-right"
@@ -1427,7 +1458,7 @@ function KeyHints(): ReactEcs.JSX.Element {
 // ──────────────────────────────────────────────────────────
 function LobbyChoiceScreen(): ReactEcs.JSX.Element {
   const mobile = isMobile()
-  const buttonWidth = mobile ? '76%' : 400
+  const buttonWidth = mobile ? '68%' : 400
   const replayTutorial = (): void => {
     playButtonSound()
     tutorialPage = 0
@@ -1466,19 +1497,19 @@ function LobbyChoiceScreen(): ReactEcs.JSX.Element {
           uiTransform={{ width: '100%', height: mobile ? 26 : 32, margin: { bottom: mobile ? 8 : 12 } }} textAlign="middle-center" />
 
         {tutorialPage < 3 ? <TutorialSlide /> : (
-          <UiEntity uiTransform={{ width: '100%', height: mobile ? 390 : 375, flexDirection: 'column', alignItems: 'center' }}>
+          <UiEntity uiTransform={{ width: '100%', height: mobile ? 304 : 375, flexDirection: 'column', alignItems: 'center', margin: { top: mobile ? 8 : 0 } }}>
             <UiEntity
-              uiTransform={{ width: 190, height: mobile ? 28 : 34, alignItems: 'center', justifyContent: 'center', margin: { bottom: mobile ? 4 : 8 } }}
+              uiTransform={{ width: mobile ? 170 : 190, height: mobile ? 24 : 34, alignItems: 'center', justifyContent: 'center', margin: { bottom: mobile ? 4 : 8 } }}
               onMouseDown={replayTutorial}
             >
-              <Label value="↻  REPLAY TUTORIAL" fontSize={mobile ? 24 : 17} color={Color4.create(0.66, 0.78, 1, 1)}
+              <Label value="↻  REPLAY TUTORIAL" fontSize={mobile ? 18 : 17} color={Color4.create(0.66, 0.78, 1, 1)}
                 uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} textAlign="middle-center" />
             </UiEntity>
             <DailyGoalsMenuCard />
             <MenuButton label="DANCE" tone="cyan" onClick={openPlayMenu} width={buttonWidth}
-              height={mobile ? 70 : 64} fontSize={mobile ? 36 : 30} marginBottom={mobile ? 12 : 13} />
+              height={mobile ? 52 : 64} fontSize={mobile ? 28 : 30} marginBottom={mobile ? 8 : 13} />
             <MenuButton label="JUST WATCH" tone="magenta" onClick={watchLiveMode} width={buttonWidth}
-              height={mobile ? 70 : 64} fontSize={mobile ? 34 : 28} />
+              height={mobile ? 52 : 64} fontSize={mobile ? 27 : 28} />
           </UiEntity>
         )}
       </UiEntity>
@@ -1628,8 +1659,8 @@ function JumpOffButton(): ReactEcs.JSX.Element {
       uiTransform={{
         positionType: 'absolute',
         position: { top: mobile ? 180 : 194, right: mobile ? 12 : 24 },
-        width: mobile ? 190 : 170,
-        height: mobile ? 54 : 46,
+        width: mobile ? 152 : 170,
+        height: mobile ? 46 : 46,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 12,
@@ -1641,7 +1672,7 @@ function JumpOffButton(): ReactEcs.JSX.Element {
     >
       <Label
         value="JUMP OFF"
-        fontSize={mobile ? 25 : 21}
+        fontSize={mobile ? 21 : 21}
         color={Color4.create(1.0, 0.76, 0.84, 1)}
         uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }}
         textAlign="middle-center"
