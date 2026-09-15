@@ -1,6 +1,6 @@
 {
   "display": {
-    "title": "Drop Beat - Dance Rhythm Game",
+    "title": " Beat Score - Dance Rhythm Game",
     "description": "A Decentraland dance rhythm game.",
     "favicon": "favicon_asset",
     "navmapThumbnail": "assets/images/floor.png"
@@ -11,6 +11,7 @@
   },
   "main": "bin/game.js",
   "runtimeVersion": "7",
+  "authoritativeMultiplayer": true,
   "scene": {
     "base": "0,0",
     "parcels": [
@@ -30,12 +31,12 @@
           24
         ],
         "y": [
-          1.100000023841858,
-          2.700000047683716
+          1.899999976158142,
+          1.899999976158142
         ],
         "z": [
-          26.399999618530273,
-          29.399999618530273
+          19.899999618530273,
+          35.900001525878906
         ]
       },
       "cameraTarget": {

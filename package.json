@@ -8,8 +8,8 @@
     "deploy": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org"
   },
   "dependencies": {
-    "@dcl/js-runtime": "7.27.0",
-    "@dcl/sdk": "7.27.0"
+    "@dcl/js-runtime": "^7.28.1-34869822800.commit-268e971",
+    "@dcl/sdk": "^7.28.1-34869822800.commit-268e971"
   },
   "devDependencies": {
     "@dcl/sdk-commands": "^7.0.0",

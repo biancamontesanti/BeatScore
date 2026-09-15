@@ -1,5 +1,7 @@
 import {
   AudioSource,
+  AvatarModifierArea,
+  AvatarModifierType,
   engine,
   inputSystem,
   InputAction,
@@ -8,10 +10,13 @@ import {
   PointerEventType,
   TouchScreenControls,
   Transform,
+  type Entity,
   VirtualCamera,
 } from '@dcl/sdk/ecs'
+import { Schemas } from '@dcl/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
-import { MessageBus } from '@dcl/sdk/message-bus'
+import { isServer } from '@dcl/sdk/network'
+import { registerMessages } from '@dcl/sdk/network/events'
 import { isMobile } from '@dcl/sdk/platform'
 import { getPlayer, onEnterScene, onLeaveScene } from '@dcl/sdk/players'
 import { movePlayerTo, triggerEmote } from '~system/RestrictedActions'
@@ -238,6 +243,15 @@ export const gameState: GameState = {
   multiplayerLiveRemaining: 0,
 }
 
+// Mobile control feedback is independent from scoring, so every tap feels responsive.
+export const mobileTapFeedback = {
+  left: 0,
+  down: 0,
+  up: 0,
+  right: 0,
+  hit: 0,
+}
+
 // ──────────────────────────────────────────────────────────
 // Internal
 // ──────────────────────────────────────────────────────────
@@ -284,7 +298,7 @@ const DANCE_FLOOR_MAX_Z = 24.6
 // Keep the song length stable while moving 2.5 seconds from downtime into each playable sequence.
 const WAIT_MIN = 0.5
 const WAIT_MAX = 1.5
-const MULTIPLAYER_READY_WINDOW = 60.0
+const MULTIPLAYER_READY_WINDOW = 120.0
 const MULTIPLAYER_READY_WINDOW_MS = MULTIPLAYER_READY_WINDOW * 1000
 const MAX_MULTIPLAYER_PLAYERS = 20
 const MULTIPLAYER_SCORE_CHANNEL = 'rhythm-hit-score-v2'
@@ -292,7 +306,44 @@ const MULTIPLAYER_SYNC_INTERVAL = 1.5
 const STALE_MATCH_PLAYER_MS = 20000
 const MATCH_START_TOLERANCE_MS = 2500
 
-const multiplayerBus = new MessageBus()
+const NetworkMatchPlayerSchema = Schemas.Map({
+  playerId: Schemas.String,
+  name: Schemas.String,
+  score: Schemas.Int,
+  maxCombo: Schemas.Int,
+  rankPoints: Schemas.Int,
+  wins: Schemas.Int,
+  matchesPlayed: Schemas.Int,
+  ready: Schemas.Boolean,
+  finished: Schemas.Boolean,
+  measureCount: Schemas.Int,
+  phase: Schemas.String,
+  sentAt: Schemas.Int64,
+  matchStartTime: Schemas.Int64,
+  judgmentText: Schemas.String,
+  judgmentCombo: Schemas.Int,
+  judgmentSentAt: Schemas.Int64,
+})
+
+const multiplayerRoom = registerMessages({
+  playerUpdate: NetworkMatchPlayerSchema,
+  playerLeave: Schemas.Map({
+    playerId: Schemas.String,
+  }),
+  matchClock: Schemas.Map({
+    matchStartTime: Schemas.Int64,
+    sentAt: Schemas.Int64,
+  }),
+  soloIsolation: Schemas.Map({
+    playerId: Schemas.String,
+    active: Schemas.Boolean,
+  }),
+})
+
+const serverPlayers = new Map<string, ScorePayload>()
+let networkHandlersInitialized = false
+let soloIsolationEntity = engine.RootEntity
+const remoteSoloIsolationEntities = new Map<string, Entity>()
 
 const DANCE_SLOTS = [
   Vector3.create(16.0, 0, 10.9),
@@ -361,6 +412,111 @@ interface ScorePayload {
   judgmentSentAt?: number
 }
 
+function sanitizePhase(phase: string): GameState['phase'] {
+  if (phase === 'ready' || phase === 'playing' || phase === 'gameover' || phase === 'idle') return phase
+  return 'idle'
+}
+
+function sanitizeNetworkPlayer(value: ScorePayload): ScorePayload | null {
+  if (!value || typeof value.playerId !== 'string' || value.playerId.length === 0) return null
+
+  return {
+    playerId: value.playerId,
+    name: typeof value.name === 'string' && value.name.length > 0 ? value.name.slice(0, 40) : 'Dancer',
+    score: Math.max(0, Math.floor(Number(value.score) || 0)),
+    maxCombo: Math.max(0, Math.floor(Number(value.maxCombo) || 0)),
+    rankPoints: Math.max(0, Math.floor(Number(value.rankPoints) || 0)),
+    wins: Math.max(0, Math.floor(Number(value.wins) || 0)),
+    matchesPlayed: Math.max(0, Math.floor(Number(value.matchesPlayed) || 0)),
+    ready: Boolean(value.ready),
+    finished: Boolean(value.finished),
+    measureCount: Math.max(0, Math.floor(Number(value.measureCount) || 0)),
+    phase: sanitizePhase(String(value.phase)),
+    sentAt: Math.max(0, Math.floor(Number(value.sentAt) || Date.now())),
+    matchStartTime: Math.max(0, Math.floor(Number(value.matchStartTime) || 0)),
+    judgmentText: value.judgmentText || '',
+    judgmentCombo: Math.max(0, Math.floor(Number(value.judgmentCombo) || 0)),
+    judgmentSentAt: Math.max(0, Math.floor(Number(value.judgmentSentAt) || 0)),
+  }
+}
+
+function applyNetworkPlayer(value: ScorePayload): void {
+  if (gameState.playMode === 'solo') return
+  const payload = sanitizeNetworkPlayer(value)
+  if (!payload) return
+
+  const local = getLocalPlayerIdentity()
+  if (payload.playerId === local.playerId) return
+  if (payload.phase === 'idle') {
+    gameState.matchPlayers = gameState.matchPlayers.filter(player => player.playerId !== payload.playerId)
+    sortMatchPlayers()
+    return
+  }
+  if (payload.phase === 'playing' || payload.phase === 'gameover') {
+    remoteLiveMatchTimer = 3.5
+    if (payload.matchStartTime > 0) remoteLiveMatchStartTimeMs = payload.matchStartTime
+  }
+  if (payload.matchStartTime > 0) {
+    const targetIsFuture = payload.matchStartTime > Date.now()
+    if (payload.phase === 'ready' && gameState.phase === 'ready' && targetIsFuture) {
+      if (multiplayerMatchStartTimeMs <= 0 || payload.matchStartTime < multiplayerMatchStartTimeMs) {
+        multiplayerMatchStartTimeMs = payload.matchStartTime
+        syncLocalReadyPlayerForScheduledMatch()
+      }
+    } else if (gameState.phase !== 'ready' && multiplayerMatchStartTimeMs <= 0) {
+      multiplayerMatchStartTimeMs = payload.matchStartTime
+    }
+  }
+
+  upsertMatchPlayer(
+    payload.playerId,
+    payload.name,
+    payload.score,
+    payload.maxCombo,
+    payload.rankPoints,
+    payload.wins,
+    payload.matchesPlayed,
+    payload.ready,
+    payload.finished,
+    false,
+    payload.phase,
+    payload.matchStartTime,
+    payload.judgmentText || '',
+    payload.judgmentCombo || 0,
+    payload.judgmentSentAt || 0,
+  )
+
+  const localEntry = gameState.matchPlayers.find(player => player.playerId === local.playerId)
+  if (
+    gameState.phase === 'ready' &&
+    gameState.playMode === 'multiplayer' &&
+    localEntry?.ready &&
+    payload.phase === 'playing' &&
+    isSameScheduledMatch(payload.matchStartTime) &&
+    Date.now() >= multiplayerMatchStartTimeMs - MATCH_START_TOLERANCE_MS
+  ) {
+    startGame('multiplayer')
+    return
+  }
+
+  tryStartWinnerSpotlight()
+}
+
+function applyNetworkClock(matchStartTime: number): void {
+  if (gameState.playMode === 'solo') return
+  if (matchStartTime <= 0) return
+  const targetIsFuture = matchStartTime > Date.now()
+  if (gameState.phase === 'ready' && targetIsFuture) {
+    if (multiplayerMatchStartTimeMs <= 0 || matchStartTime < multiplayerMatchStartTimeMs) {
+      multiplayerMatchStartTimeMs = matchStartTime
+      syncLocalReadyPlayerForScheduledMatch()
+      syncGlobalMultiplayerWindow()
+    }
+  } else if (gameState.phase !== 'ready' && multiplayerMatchStartTimeMs <= 0) {
+    multiplayerMatchStartTimeMs = matchStartTime
+  }
+}
+
 function getNextMultiplayerMatchStartMs(): number {
   return Math.floor(Date.now() / MULTIPLAYER_READY_WINDOW_MS) * MULTIPLAYER_READY_WINDOW_MS + MULTIPLAYER_READY_WINDOW_MS
 }
@@ -401,6 +557,57 @@ function syncMultiplayerLiveRemaining(): number {
   gameState.multiplayerLiveRemaining = remaining
   if (remaining <= 0) remoteLiveMatchTimer = 0
   return remaining
+}
+
+function setSoloIsolationActive(active: boolean): void {
+  if (active) {
+    if (soloIsolationEntity === engine.RootEntity) {
+      soloIsolationEntity = engine.addEntity()
+    }
+    Transform.createOrReplace(soloIsolationEntity, {
+      position: Vector3.create(16, 6, 16),
+    })
+    AvatarModifierArea.createOrReplace(soloIsolationEntity, {
+      area: Vector3.create(36, 12, 36),
+      excludeIds: [getLocalPlayerIdentity().playerId],
+      modifiers: [
+        AvatarModifierType.AMT_HIDE_AVATARS,
+        AvatarModifierType.AMT_HIDE_NAMETAGS,
+        AvatarModifierType.AMT_DISABLE_PASSPORTS,
+      ],
+    })
+    return
+  }
+
+  if (soloIsolationEntity !== engine.RootEntity && AvatarModifierArea.has(soloIsolationEntity)) {
+    AvatarModifierArea.deleteFrom(soloIsolationEntity)
+  }
+}
+
+function setRemoteSoloIsolation(playerId: string, active: boolean): void {
+  if (!playerId || playerId === getLocalPlayerIdentity().playerId) return
+
+  const existing = remoteSoloIsolationEntities.get(playerId) as Entity | undefined
+  if (!active) {
+    if (existing !== undefined && AvatarModifierArea.has(existing)) AvatarModifierArea.deleteFrom(existing)
+    remoteSoloIsolationEntities.delete(playerId)
+    return
+  }
+
+  const entity = existing ?? engine.addEntity()
+  remoteSoloIsolationEntities.set(playerId, entity)
+  Transform.createOrReplace(entity, {
+    position: Vector3.create(SOLO_DANCE_SLOT.x, 5, SOLO_DANCE_SLOT.z),
+  })
+  AvatarModifierArea.createOrReplace(entity, {
+    area: Vector3.create(5.2, 10, 5.2),
+    excludeIds: [],
+    modifiers: [
+      AvatarModifierType.AMT_HIDE_AVATARS,
+      AvatarModifierType.AMT_HIDE_NAMETAGS,
+      AvatarModifierType.AMT_DISABLE_PASSPORTS,
+    ],
+  })
 }
 
 function resetMultiplayerReadyWindow(): void {
@@ -983,84 +1190,89 @@ function publishScore(finished = false): void {
 
   const local = ensureLocalMatchPlayer()
   local.finished = finished || local.finished
-  multiplayerBus.emit(MULTIPLAYER_SCORE_CHANNEL, {
+  void multiplayerRoom.send('playerUpdate', {
     playerId: local.playerId,
     name: local.name,
-    score: local.score,
-    maxCombo: local.maxCombo,
-    rankPoints: local.rankPoints,
-    wins: local.wins,
-    matchesPlayed: local.matchesPlayed,
+    score: Math.floor(local.score),
+    maxCombo: Math.floor(local.maxCombo),
+    rankPoints: Math.floor(local.rankPoints),
+    wins: Math.floor(local.wins),
+    matchesPlayed: Math.floor(local.matchesPlayed),
     ready: local.ready,
     finished: local.finished,
-    measureCount: gameState.measureCount,
+    measureCount: Math.floor(gameState.measureCount),
     phase: gameState.phase,
     sentAt: Date.now(),
-    matchStartTime: multiplayerMatchStartTimeMs,
+    matchStartTime: Math.floor(multiplayerMatchStartTimeMs),
     judgmentText: local.judgmentText,
-    judgmentCombo: local.judgmentCombo,
-    judgmentSentAt: local.judgmentSentAt,
+    judgmentCombo: Math.floor(local.judgmentCombo),
+    judgmentSentAt: Math.floor(local.judgmentSentAt),
   })
 }
 
 function initMultiplayerScoreBus(): void {
+  if (networkHandlersInitialized) return
+  networkHandlersInitialized = true
   ensureLocalMatchPlayer()
-  multiplayerBus.on(MULTIPLAYER_SCORE_CHANNEL, (value: ScorePayload) => {
-    if (gameState.playMode === 'solo') return
-    if (!value || typeof value.playerId !== 'string') return
 
-    const local = getLocalPlayerIdentity()
-    if (value.playerId === local.playerId) return
-    if (value.phase === 'playing' || value.phase === 'gameover') {
-      remoteLiveMatchTimer = 3.5
-      if (value.matchStartTime && value.matchStartTime > 0) {
-        remoteLiveMatchStartTimeMs = value.matchStartTime
+  multiplayerRoom.onMessage('playerUpdate', (value, context) => {
+    const payload = sanitizeNetworkPlayer(value as ScorePayload)
+    if (!payload) return
+
+    if (isServer()) {
+      if (payload.phase === 'idle') serverPlayers.delete(payload.playerId)
+      else serverPlayers.set(payload.playerId, payload)
+
+      if (payload.matchStartTime > 0) {
+        void multiplayerRoom.send('matchClock', {
+          matchStartTime: payload.matchStartTime,
+          sentAt: Date.now(),
+        })
       }
-    }
-    if (value.matchStartTime && value.matchStartTime > 0) {
-      const targetIsFuture = value.matchStartTime > Date.now()
-      if (value.phase === 'ready' && gameState.phase === 'ready' && targetIsFuture) {
-        if (multiplayerMatchStartTimeMs <= 0 || value.matchStartTime < multiplayerMatchStartTimeMs) {
-          multiplayerMatchStartTimeMs = value.matchStartTime
-          syncLocalReadyPlayerForScheduledMatch()
-        }
-      } else if (gameState.phase !== 'ready' && multiplayerMatchStartTimeMs <= 0) {
-        multiplayerMatchStartTimeMs = value.matchStartTime
-      }
-    }
-
-    upsertMatchPlayer(
-      value.playerId,
-      value.name || 'Dancer',
-      Number(value.score) || 0,
-      Number(value.maxCombo) || 0,
-      Number(value.rankPoints) || 0,
-      Number(value.wins) || 0,
-      Number(value.matchesPlayed) || 0,
-      Boolean(value.ready),
-      Boolean(value.finished),
-      false,
-      value.phase,
-      Number(value.matchStartTime) || 0,
-      value.judgmentText || '',
-      Number(value.judgmentCombo) || 0,
-      Number(value.judgmentSentAt) || 0,
-    )
-
-    const localEntry = gameState.matchPlayers.find(player => player.playerId === local.playerId)
-    if (
-      gameState.phase === 'ready' &&
-      gameState.playMode === 'multiplayer' &&
-      localEntry?.ready &&
-      value.phase === 'playing' &&
-      isSameScheduledMatch(Number(value.matchStartTime) || 0) &&
-      Date.now() >= multiplayerMatchStartTimeMs - MATCH_START_TOLERANCE_MS
-    ) {
-      startGame('multiplayer')
+      void multiplayerRoom.send('playerUpdate', payload)
       return
     }
 
-    tryStartWinnerSpotlight()
+    applyNetworkPlayer(payload)
+  })
+
+  multiplayerRoom.onMessage('playerLeave', (value) => {
+    const playerId = String(value.playerId || '')
+    if (!playerId) return
+    if (isServer()) {
+      serverPlayers.delete(playerId)
+      void multiplayerRoom.send('playerLeave', { playerId })
+    } else {
+      gameState.matchPlayers = gameState.matchPlayers.filter(player => player.playerId !== playerId)
+      sortMatchPlayers()
+    }
+  })
+
+  multiplayerRoom.onMessage('matchClock', (value) => {
+    if (isServer()) return
+    applyNetworkClock(Number(value.matchStartTime) || 0)
+  })
+
+  multiplayerRoom.onMessage('soloIsolation', (value) => {
+    const playerId = String(value.playerId || '')
+    const active = Boolean(value.active)
+    if (!playerId) return
+    if (isServer()) {
+      if (active) serverPlayers.delete(playerId)
+      void multiplayerRoom.send('soloIsolation', { playerId, active })
+      if (active) void multiplayerRoom.send('playerLeave', { playerId })
+      return
+    }
+
+    setRemoteSoloIsolation(playerId, active)
+    if (active) {
+      gameState.matchPlayers = gameState.matchPlayers.filter(player => player.playerId !== playerId)
+      sortMatchPlayers()
+    }
+  })
+
+  multiplayerRoom.onReady((ready) => {
+    if (ready && !isServer() && gameState.playMode === 'multiplayer') publishScore(false)
   })
 
   onEnterScene((player) => {
@@ -1073,6 +1285,8 @@ function initMultiplayerScoreBus(): void {
   })
 
   onLeaveScene((userId) => {
+    if (isServer()) serverPlayers.delete(userId)
+    void multiplayerRoom.send('playerLeave', { playerId: userId })
     gameState.matchPlayers = gameState.matchPlayers.filter(player => player.playerId !== userId)
     sortMatchPlayers()
   })
@@ -1627,20 +1841,6 @@ function getMultiplayerTimeline(elapsedSeconds: number): {
     cursor += roundDuration
   }
 
-  if (elapsedSeconds < MATCH_MUSIC_DURATION) {
-    return {
-      finished: false,
-      measureCount: TOTAL_MEASURES,
-      roundState: 'waiting',
-      roundMode: 'hard',
-      waitDuration: Math.max(0, MATCH_MUSIC_DURATION - cursor),
-      waitTimer: Math.max(0, MATCH_MUSIC_DURATION - elapsedSeconds),
-      measureTime: 0,
-      measureProgress: 0,
-      beat: Math.floor(elapsedSeconds / BEAT_DURATION),
-    }
-  }
-
   return {
     finished: true,
     measureCount: TOTAL_MEASURES,
@@ -1778,7 +1978,11 @@ function startGame(mode: Exclude<PlayMode, 'none'>): void {
     multiplayerMatchStartTimeMs = 0
     gameState.matchPlayers = []
     gameState.matchWinnerName = ''
+    void multiplayerRoom.send('playerLeave', { playerId: getLocalPlayerIdentity().playerId })
+    void multiplayerRoom.send('soloIsolation', { playerId: getLocalPlayerIdentity().playerId, active: true })
+    setSoloIsolationActive(true)
   } else {
+    setSoloIsolationActive(false)
     if (multiplayerMatchStartTimeMs <= 0) multiplayerMatchStartTimeMs = Date.now()
     prepareMultiplayerParticipants()
     matchSlotsLocked = true
@@ -1824,6 +2028,8 @@ export function startSoloMode(): void {
 }
 
 export function readyForMultiplayer(): void {
+  void multiplayerRoom.send('soloIsolation', { playerId: getLocalPlayerIdentity().playerId, active: false })
+  setSoloIsolationActive(false)
   matchSlotsLocked = false
   postGameReturnTimer = 0
   const liveRemaining = syncMultiplayerLiveRemaining()
@@ -1884,6 +2090,8 @@ export function cancelMultiplayerReady(): void {
   teleportPlayerToAudienceSpot()
   stopMatchMusic()
   publishScore(false)
+  void multiplayerRoom.send('playerLeave', { playerId: local.playerId })
+  void multiplayerRoom.send('soloIsolation', { playerId: local.playerId, active: false })
 }
 
 export function toggleMultiplayerReady(): void {
@@ -1909,6 +2117,9 @@ export function returnToLobby(): void {
   multiplayerMatchStartTimeMs = 0
   local.matchStartTime = 0
   publishScore(false)
+  void multiplayerRoom.send('playerLeave', { playerId: local.playerId })
+  void multiplayerRoom.send('soloIsolation', { playerId: local.playerId, active: false })
+  setSoloIsolationActive(false)
   gameState.playMode = 'none'
   gameState.lobbyPrompt = 'choice'
   gameState.roundState = 'active'
@@ -1941,6 +2152,9 @@ export function watchLiveMode(): void {
   multiplayerMatchStartTimeMs = 0
   local.matchStartTime = 0
   publishScore(false)
+  void multiplayerRoom.send('playerLeave', { playerId: local.playerId })
+  void multiplayerRoom.send('soloIsolation', { playerId: local.playerId, active: false })
+  setSoloIsolationActive(false)
   gameState.playMode = 'none'
   gameState.lobbyPrompt = 'hidden'
   matchSlotsLocked = false
@@ -2096,6 +2310,11 @@ export function initGame(): void {
     // ── Decay visual feedback ──
     gameState.beatPulse  = Math.max(0, gameState.beatPulse  - dt * 6)
     gameState.spaceFlash = Math.max(0, gameState.spaceFlash - dt * 4)
+    mobileTapFeedback.left = Math.max(0, mobileTapFeedback.left - dt * 2.2)
+    mobileTapFeedback.down = Math.max(0, mobileTapFeedback.down - dt * 2.2)
+    mobileTapFeedback.up = Math.max(0, mobileTapFeedback.up - dt * 2.2)
+    mobileTapFeedback.right = Math.max(0, mobileTapFeedback.right - dt * 2.2)
+    mobileTapFeedback.hit = Math.max(0, mobileTapFeedback.hit - dt * 1.8)
     for (const d of ALL_DIRS) {
       gameState.keyFlash[d] = Math.max(0, gameState.keyFlash[d] - dt * 8)
     }
@@ -2198,6 +2417,7 @@ export function initGame(): void {
       inputSystem.isTriggered(InputAction.IA_LEFT, PointerEventType.PET_DOWN) ||
       (mobileInput && inputSystem.isTriggered(InputAction.IA_ACTION_3, PointerEventType.PET_DOWN))
     ) {
+      if (mobileInput) mobileTapFeedback.left = 1
       gameState.keyFlash.left = 1.0
       handleArrow('left')
     }
@@ -2205,6 +2425,7 @@ export function initGame(): void {
       inputSystem.isTriggered(InputAction.IA_RIGHT, PointerEventType.PET_DOWN) ||
       (mobileInput && inputSystem.isTriggered(InputAction.IA_ACTION_4, PointerEventType.PET_DOWN))
     ) {
+      if (mobileInput) mobileTapFeedback.right = 1
       gameState.keyFlash.right = 1.0
       handleArrow('right')
     }
@@ -2212,6 +2433,7 @@ export function initGame(): void {
       inputSystem.isTriggered(InputAction.IA_FORWARD, PointerEventType.PET_DOWN) ||
       (mobileInput && inputSystem.isTriggered(InputAction.IA_ACTION_5, PointerEventType.PET_DOWN))
     ) {
+      if (mobileInput) mobileTapFeedback.up = 1
       gameState.keyFlash.up = 1.0
       handleArrow('up')
     }
@@ -2219,6 +2441,7 @@ export function initGame(): void {
       inputSystem.isTriggered(InputAction.IA_BACKWARD, PointerEventType.PET_DOWN) ||
       (mobileInput && inputSystem.isTriggered(InputAction.IA_ACTION_6, PointerEventType.PET_DOWN))
     ) {
+      if (mobileInput) mobileTapFeedback.down = 1
       gameState.keyFlash.down = 1.0
       handleArrow('down')
     }
@@ -2239,6 +2462,7 @@ export function initGame(): void {
 
     // ── Spacebar = timing judgment ──
     if (inputSystem.isTriggered(InputAction.IA_JUMP, PointerEventType.PET_DOWN)) {
+      if (mobileInput) mobileTapFeedback.hit = 1
       handleSpace()
     }
 
@@ -2255,9 +2479,7 @@ export function initGame(): void {
     if (gameState.measureProgress >= 1.0) {
       gameState.measureCount++
       if (gameState.measureCount >= TOTAL_MEASURES) {
-        const remainingMusic = Math.max(0, MATCH_MUSIC_DURATION - localMatchElapsed)
-        if (remainingMusic > 0.05) startComboWait(remainingMusic)
-        else finishGame(true)
+        finishGame(true)
       } else {
         totalBeats += Math.ceil(gameState.roundDuration / BEAT_DURATION)
         startComboWait()
