@@ -209,7 +209,7 @@ function KeyboardKey({
       }}
       uiBackground={{ color: background }}
     >
-      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 50 : 52) : (mobile ? 40 : 42)} color={completed ? HIT_COLOR : Color4.White()}
+      <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 64 : 66) : (mobile ? 40 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }} textAlign="middle-center" />
     </UiEntity>
   )
