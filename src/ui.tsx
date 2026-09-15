@@ -212,7 +212,7 @@ function KeyboardKey({
       <Label value={symbol} font={wide ? 'sans-serif' : 'monospace'} fontSize={wide ? (mobile ? 27 : 25) : horizontalTriangle ? (mobile ? 39 : 66) : (mobile ? 38 : 42)} color={completed ? HIT_COLOR : Color4.White()}
         uiTransform={{
           positionType: mobile && !wide ? 'relative' : undefined,
-          position: mobile && !wide ? { top: horizontalTriangle ? -11 : -4, left: horizontalTriangle ? -2 : 0 } : undefined,
+          position: mobile && !wide ? { top: horizontalTriangle ? -8 : -7, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
@@ -550,7 +550,7 @@ function ArrowBox({
         color={fg}
         uiTransform={{
           positionType: mobile ? 'relative' : undefined,
-          position: mobile ? { top: horizontalTriangle ? -8 : -3, left: horizontalTriangle ? -2 : 0 } : undefined,
+          position: mobile ? { top: horizontalTriangle ? -6 : -5, left: horizontalTriangle ? -2 : 0 } : undefined,
           width: '100%',
           height: '100%',
           alignItems: 'center',
